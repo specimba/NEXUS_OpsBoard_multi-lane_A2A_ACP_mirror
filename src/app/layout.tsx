@@ -43,6 +43,7 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased nexus-bg text-foreground min-h-screen flex flex-col`}
+        suppressHydrationWarning
       >
         <OpsNav />
         <main className="flex-1 mx-auto w-full max-w-7xl px-3 sm:px-6 py-5">
