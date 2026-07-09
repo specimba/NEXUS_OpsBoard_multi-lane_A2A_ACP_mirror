@@ -1,0 +1,20 @@
+{
+  "bridge": "grok-mcp-bridge-v2",
+  "version": "2.4.1",
+  "status": "ok",
+  "uptime_s": 58231,
+  "tools_registered": 22,
+  "registry_hash": "0xab12cd34",
+  "runtime": "scratch/browser_ai_mcp_runtime",
+  "sse": true,
+  "lanes_visible": 1,
+  "cdp_port": 9224,
+  "denied": [
+    "shell",
+    "local_fs_write",
+    "cookies",
+    "private_ip",
+    "cdp_drive"
+  ],
+  "checked_at_sample": "2025-01-14T09:18:00.000Z"
+}

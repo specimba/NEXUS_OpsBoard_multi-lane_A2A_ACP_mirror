@@ -1,0 +1,24 @@
+{"ts":"2025-01-14T08:02:11Z","kind":"handoff","lane":"grok","status":"ok","cycle":"cyc_1042","from":"grok","to":"qwen_webdev","token":"nx_TK4","summary":"handed dashboard skin spec to qwen for preview mirror"}
+{"ts":"2025-01-14T08:04:55Z","kind":"heartbeat","lane":"glm52","status":"ok","cycle":"cyc_1042","note":"control-plane compiled; STATE A done"}
+{"ts":"2025-01-14T08:09:30Z","kind":"task","lane":"deepseek","status":"claimed","cycle":"cyc_1042","task":"review mcp/health proxy SSRF surface"}
+{"ts":"2025-01-14T08:11:02Z","kind":"evidence","lane":"grok","status":"captured","cycle":"cyc_1042","evidence_id":"ev_77c1","ref":"registry_debug hash 0xab12"}
+{"ts":"2025-01-14T08:15:44Z","kind":"handoff","lane":"qwen_webdev","status":"ok","cycle":"cyc_1042","from":"qwen_webdev","to":"gemini","token":"nx_TK5","summary":"preview DOM captured; package to Drive"}
+{"ts":"2025-01-14T08:18:20Z","kind":"probe","lane":"mimo_claw","status":"blocked","cycle":"cyc_1042","verdict":"red-team gate pending 4h cycle"}
+{"ts":"2025-01-14T08:22:01Z","kind":"heartbeat","lane":"zo","status":"ok","cycle":"cyc_1042","note":"resume summary produced after pause"}
+{"ts":"2025-01-14T08:27:33Z","kind":"task","lane":"mistral_code","status":"open","cycle":"cyc_1043","task":"open PR for handoff store"}
+{"ts":"2025-01-14T08:30:12Z","kind":"heartbeat","lane":"gemini","status":"ok","cycle":"cyc_1043","note":"Drive package published"}
+{"ts":"2025-01-14T08:33:50Z","kind":"handoff","lane":"deepseek","status":"ok","cycle":"cyc_1043","from":"deepseek","to":"grok","token":"nx_TK6","summary":"SSRF review notes; allow public HTTPS only"}
+{"ts":"2025-01-14T08:37:09Z","kind":"probe","lane":"grok","status":"ok","cycle":"cyc_1043","target":"https://example.com","via":"http_diagnostic","mode":"HEAD"}
+{"ts":"2025-01-14T08:40:21Z","kind":"task","lane":"minimax","status":"completed","cycle":"cyc_1043","task":"verifier sign-off on lane registry"}
+{"ts":"2025-01-14T08:44:02Z","kind":"heartbeat","lane":"intern_gpu","status":"partial","cycle":"cyc_1043","note":"A800 notebook job queued"}
+{"ts":"2025-01-14T08:48:55Z","kind":"handoff","lane":"grok","status":"ok","cycle":"cyc_1043","from":"grok","to":"zo","token":"nx_TK7","summary":"handoff bus schema to ubuntu agents"}
+{"ts":"2025-01-14T08:52:30Z","kind":"evidence","lane":"mimo_claw","status":"captured","cycle":"cyc_1043","evidence_id":"ev_77c2","ref":"comparison_add before/after lane grid"}
+{"ts":"2025-01-14T08:55:14Z","kind":"task","lane":"meta_muse","status":"open","cycle":"cyc_1044","task":"fast HTML example for keep_visible banner"}
+{"ts":"2025-01-14T08:58:40Z","kind":"heartbeat","lane":"chatgpt","status":"partial","cycle":"cyc_1044","note":"CDP lane responsive but slow"}
+{"ts":"2025-01-14T09:01:22Z","kind":"handoff","lane":"gemini","status":"ok","cycle":"cyc_1044","from":"gemini","to":"grok","token":"nx_TK8","summary":"Drive package link returned"}
+{"ts":"2025-01-14T09:04:05Z","kind":"probe","lane":"mimo_claw","status":"ok","cycle":"cyc_1044","verdict":"PASS","note":"4h red-team cleared"}
+{"ts":"2025-01-14T09:07:48Z","kind":"heartbeat","lane":"grok","status":"ok","cycle":"cyc_1044","note":"coordinator orchestrating cyc_1044"}
+{"ts":"2025-01-14T09:10:33Z","kind":"task","lane":"qwen_deep","status":"claimed","cycle":"cyc_1044","task":"reasoning over handoff dedup policy"}
+{"ts":"2025-01-14T09:13:19Z","kind":"evidence","lane":"glm52","status":"captured","cycle":"cyc_1044","evidence_id":"ev_77c3","ref":"STATE.md milestone A snapshot"}
+{"ts":"2025-01-14T09:16:02Z","kind":"handoff","lane":"zo","status":"blocked","cycle":"cyc_1044","from":"zo","to":"intern_gpu","token":"nx_TK9","summary":"GPU job spec handed off; A800 busy"}
+{"ts":"2025-01-14T09:18:45Z","kind":"heartbeat","lane":"mistral_code","status":"ok","cycle":"cyc_1044","note":"PR draft in progress"}

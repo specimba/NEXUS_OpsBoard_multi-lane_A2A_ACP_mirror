@@ -1,0 +1,97 @@
+[
+  {
+    "id": "hof_seed_1",
+    "from": "grok",
+    "to": "qwen_webdev",
+    "token": "nx_TK4",
+    "summary": "Hand dashboard skin spec to Qwen for preview mirror. Success = Preview DOM, not chat essay.",
+    "artifacts": [
+      "docs/LANE_DOCTRINE.md",
+      "data/sample_handoffs.json"
+    ],
+    "status": "accepted",
+    "created_at": "2025-01-14T08:02:11.000Z",
+    "mcp_evidence_ref": "ev_77c1",
+    "budget": "1 cycle"
+  },
+  {
+    "id": "hof_seed_2",
+    "from": "qwen_webdev",
+    "to": "gemini",
+    "token": "nx_TK5",
+    "summary": "Preview DOM captured; package the skin + components into Drive for storage bridge.",
+    "artifacts": [
+      "preview://nexus-skin"
+    ],
+    "status": "done",
+    "created_at": "2025-01-14T08:15:44.000Z",
+    "mcp_evidence_ref": "ev_77c2",
+    "budget": "1 cycle"
+  },
+  {
+    "id": "hof_seed_3",
+    "from": "deepseek",
+    "to": "grok",
+    "token": "nx_TK6",
+    "summary": "SSRF review of mcp/health proxy: allow public HTTPS only, block private IPs, no cookies/auth headers.",
+    "artifacts": [
+      "docs/MCP_CONTRACT.md"
+    ],
+    "status": "done",
+    "created_at": "2025-01-14T08:33:50.000Z",
+    "mcp_evidence_ref": "ev_77c3",
+    "budget": "0.5 cycle"
+  },
+  {
+    "id": "hof_seed_4",
+    "from": "grok",
+    "to": "zo",
+    "token": "nx_TK7",
+    "summary": "Handoff bus schema to Ubuntu agents; resume summary required after pause (not hide-stress).",
+    "artifacts": [
+      "src/lib/handoffBus.ts",
+      "src/lib/types.ts"
+    ],
+    "status": "open",
+    "created_at": "2025-01-14T08:48:55.000Z",
+    "budget": "1 cycle"
+  },
+  {
+    "id": "hof_seed_5",
+    "from": "gemini",
+    "to": "grok",
+    "token": "nx_TK8",
+    "summary": "Drive package link returned; coordinator to fan out to mistral_code for PR.",
+    "artifacts": [
+      "drive://nexus/skin-package.zip"
+    ],
+    "status": "done",
+    "created_at": "2025-01-14T09:01:22.000Z",
+    "budget": "0.5 cycle"
+  },
+  {
+    "id": "hof_seed_6",
+    "from": "zo",
+    "to": "intern_gpu",
+    "token": "nx_TK9",
+    "summary": "GPU job spec handed off; A800 notebook busy. Blocked until current job completes.",
+    "artifacts": [],
+    "status": "blocked",
+    "created_at": "2025-01-14T09:16:02.000Z",
+    "budget": "2 cycles"
+  },
+  {
+    "id": "hof_mre5y357_kybow7",
+    "from": "grok",
+    "to": "qwen_webdev",
+    "token": "nx_7DHT",
+    "summary": "Browser-verified handoff from GLM-5.2 control plane — ops board live",
+    "artifacts": [
+      "STATE.md",
+      "worklog.md"
+    ],
+    "status": "open",
+    "created_at": "2026-07-09T23:54:08.107Z",
+    "budget": "0.5 cycle"
+  }
+]
