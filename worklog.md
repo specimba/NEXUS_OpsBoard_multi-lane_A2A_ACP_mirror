@@ -85,3 +85,30 @@ Work Log:
 Stage Summary:
 - All milestones A–E complete. STATE.md = READY FOR LONG RUN.
 - Agent Browser self-verify PASSED. App is interactive and runnable.
+
+---
+Task ID: 7
+Agent: GLM-5.2 (main orchestrator)
+Task: Git version control + GitHub backup + GPG commit signing (anti-wipe)
+
+Work Log:
+- Inspected existing git state: 3 prior sandbox auto-commits, no remote, placeholder identity.
+- Fetched GitHub identity via API: login specimba, id 32012089, name Canberk Karaerkek.
+- Hardened .gitignore: added /db/*.db, /.zscripts/dev.pid, /data/handoffs.json (runtime-mutated), .env.local.
+- Untracked runtime/binary/secret files: .env, db/custom.db, .zscripts/dev.pid, data/handoffs.json (kept on disk).
+- Configured git identity: name "Canberk 'specimba' Karaerkek", email 32012089+specimba@users.noreply.github.com (noreply, links to specimba account).
+- Set up credential store: token written to ~/.git-credentials (mode 600, OUTSIDE repo, never tracked); git config --global credential.helper store; remote URL is clean (no embedded token).
+- Added remote origin → specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror.git.
+- Resolved unrelated-histories divergence: merged origin/main (had .gitignore/LICENSE/README) with -X ours → kept NEXUS README/.gitignore, added LICENSE.
+- Pushed all NEXUS work (87 tracked files) to GitHub main. Verified remote tree contains src/lib/*, docs/*, data/sample_*.
+- Created scripts/git-backup.sh: idempotent commit + pull(merge) + push. Tested no-op case.
+- GPG commit signing: generated ed25519 signing key (no passphrase, headless-safe, ~/.gnupg/gpg.conf pinentry-mode loopback). Key ID 8D8015A4E4C4AF93, fingerprint C9F613A0F088BE4E5CD8FDD48D8015A4E4C4AF93. Uploaded to GitHub via API (gpg key id 5177423). Configured git user.signingkey + commit.gpgsign=true + gpg.program=/usr/bin/gpg.
+- Tested signed commit: "Good signature" verified locally; GitHub API reports "verified": true.
+- Created docs/GIT_BACKUP.md documenting remote, auth, identity, signing, gitignore policy, backup workflow, wipe-recovery.
+- Updated STATE.md with git-backup section.
+
+Stage Summary:
+- Full anti-wipe backup operational: every commit is GPG-signed (Verified on GitHub) + pushed to specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror main.
+- Token stays in ~/.git-credentials (never tracked). Runtime state gitignored. Fresh clones start clean from sample seed.
+- Recovery path documented in docs/GIT_BACKUP.md + docs/RESUME.md.
+- NOTE: ssh-keygen unavailable in sandbox (no sudo); used GPG signing instead of SSH signing. GPG works headlessly via pinentry-mode loopback + no-passphrase key.

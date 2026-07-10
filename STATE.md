@@ -55,6 +55,18 @@ All milestones (A–E) complete. App compiles, lints clean, dev server healthy o
 flow end-to-end, MCP health degrades to STUB with sample payload, filters work,
 mobile responsive, sticky footer).
 
+## Git backup (anti-wipe)
+
+- **Remote:** `specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror` (branch `main`)
+- **Token:** stored in `~/.git-credentials` (mode 600, never tracked).
+- **Identity:** `Canberk 'specimba' Karaerkek <32012089+specimba@users.noreply.github.com>`
+- **Signing:** GPG ed25519 key `8D8015A4E4C4AF93` (no passphrase, headless-safe);
+  uploaded to GitHub; `commit.gpgsign=true` → commits show **Verified**.
+- **Backup script:** `bash scripts/git-backup.sh [msg]` (commits + pulls + pushes).
+- **Docs:** `docs/GIT_BACKUP.md` (setup, recovery, gitignore policy).
+- Runtime/binary/secret files gitignored (`.env`, `db/*.db`, `data/handoffs.json`,
+  `.zscripts/dev.pid`). Fresh clones start from sample seed.
+
 ## Retry protocol
 
 1. Fail -> wait -> "Continue Milestone X from STATE.md, GLM-5.2 only".
