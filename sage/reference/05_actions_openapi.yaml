@@ -1,0 +1,557 @@
+openapi: 3.1.0
+info:
+  title: NEXUS SAGE Action Gateway
+  description: >
+    Governed REST facade for the NEXUS GPT-audit-tools MCP backend.
+    Exposes observation, evidence, audit, A2A, and task-proposal operations.
+    HERMES-only lifecycle operations task_claim, task_complete, and task_fail
+    are intentionally excluded from NEXUS SAGE.
+  version: 1.0.0
+
+servers:
+  - url: https://sharply-unethical-various.ngrok-free.dev
+    description: NEXUS public HTTPS gateway
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Health
+  - name: Registry
+  - name: Coordination
+  - name: A2A
+  - name: Sessions
+  - name: Evidence
+  - name: Audit
+  - name: Diagnostics
+  - name: Comparison
+
+paths:
+  /v1/health:
+    get:
+      tags: [Health]
+      operationId: ping
+      summary: Check NEXUS gateway health
+      description: Returns bridge identity, version, uptime, and health status.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Health response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/echo:
+    post:
+      tags: [Health]
+      operationId: echo
+      summary: Run a bounded connectivity echo
+      description: Returns the supplied message for a connector smoke test.
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  maxLength: 2000
+      responses:
+        "200":
+          description: Echo response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/registry:
+    get:
+      tags: [Registry]
+      operationId: registry_debug
+      summary: Read the registered NEXUS tool contract
+      description: Returns tool names, versions, schema hashes, and drift metadata.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Registry response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/coordination/status:
+    get:
+      tags: [Coordination]
+      operationId: coordination_status
+      summary: Read coordination queue health
+      description: Returns queue counts, revision, and the latest task identifier.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Coordination status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/tasks:
+    get:
+      tags: [Coordination]
+      operationId: task_list
+      summary: List NEXUS coordination tasks
+      description: Lists tasks by status or returns one task by identifier.
+      x-openai-isConsequential: false
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, pending, claimed, done, failed]
+            default: all
+        - name: task_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+    post:
+      tags: [Coordination]
+      operationId: task_add
+      summary: Propose a new coordination task
+      description: Adds a governed task proposal to the coordination queue.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, prompt]
+              properties:
+                kind:
+                  type: string
+                  enum: [research, audit, probe, remediate, diagnostic, integration, implementation, execution]
+                prompt:
+                  type: string
+                  maxLength: 20000
+                priority:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+      responses:
+        "200":
+          description: Task creation receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/a2a/topics:
+    get:
+      tags: [A2A]
+      operationId: agent_list_topics
+      summary: List active A2A topics
+      description: Returns the active NEXUS agent communication channels.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Topic list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/a2a/messages:
+    get:
+      tags: [A2A]
+      operationId: agent_retrieve_messages
+      summary: Retrieve A2A channel messages
+      description: Returns the latest bounded messages from one A2A topic.
+      x-openai-isConsequential: false
+      parameters:
+        - name: topic
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: A2A messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+    post:
+      tags: [A2A]
+      operationId: agent_publish_message
+      summary: Publish a governed A2A message
+      description: Publishes one bounded message to a NEXUS collaboration topic.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topic, message, sender]
+              properties:
+                topic:
+                  type: string
+                message:
+                  type: string
+                  maxLength: 20000
+                sender:
+                  type: string
+                  enum: [chatgpt, nexus-sage, hermes, grok, zo, deepseek, codex, archivist, operator]
+      responses:
+        "200":
+          description: Publish receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/sessions/status:
+    get:
+      tags: [Sessions]
+      operationId: session_status
+      summary: Read browser-agent heartbeat state
+      description: Returns heartbeat state for one session or the bounded session set.
+      x-openai-isConsequential: false
+      parameters:
+        - name: session_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/sessions/heartbeat:
+    post:
+      tags: [Sessions]
+      operationId: session_heartbeat
+      summary: Record a session heartbeat
+      description: Records bounded keep-alive state and optional JSON metadata.
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id]
+              properties:
+                session_id:
+                  type: string
+                status:
+                  type: string
+                  default: alive
+                metadata:
+                  type: string
+                  default: "{}"
+      responses:
+        "200":
+          description: Heartbeat receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/evidence:
+    post:
+      tags: [Evidence]
+      operationId: evidence_capture
+      summary: Capture integrity-hashed evidence
+      description: Stores bounded text evidence with optional JSON metadata and a SHA256 receipt.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, content]
+              properties:
+                label:
+                  type: string
+                  maxLength: 500
+                content:
+                  type: string
+                  maxLength: 80000
+                metadata:
+                  type: string
+                  default: "{}"
+      responses:
+        "200":
+          description: Evidence receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/audit:
+    post:
+      tags: [Audit]
+      operationId: audit_log
+      summary: Append a structured audit record
+      description: Stores bounded structured audit data with integrity metadata.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scenario, data]
+              properties:
+                scenario:
+                  type: string
+                  maxLength: 500
+                data:
+                  type: string
+                  maxLength: 80000
+      responses:
+        "200":
+          description: Audit receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/http-diagnostic:
+    post:
+      tags: [Diagnostics]
+      operationId: http_diagnostic
+      summary: Run a scoped public HTTPS diagnostic
+      description: Performs a bounded public GET or HEAD with private-target and credential protections.
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                method:
+                  type: string
+                  enum: [GET, HEAD]
+                  default: GET
+                headers_json:
+                  type: string
+                  default: "{}"
+                safe_preview_max:
+                  type: integer
+                  minimum: 0
+                  maximum: 5000
+                  default: 500
+                audit_id:
+                  type: string
+                  default: ""
+                scenario:
+                  type: string
+                  default: ""
+                operator:
+                  type: string
+                  default: nexus-sage
+                mode:
+                  type: string
+                  enum: [dry_run, live]
+                  default: dry_run
+      responses:
+        "200":
+          description: Diagnostic result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/query-log:
+    post:
+      tags: [Audit]
+      operationId: query_log
+      summary: Record a browser-source query result
+      description: Stores a bounded query result and associated session metadata.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query_label]
+              properties:
+                query_label:
+                  type: string
+                endpoint:
+                  type: string
+                  default: ""
+                method:
+                  type: string
+                  default: GET
+                status_code:
+                  type: integer
+                  default: 0
+                response_body:
+                  type: string
+                  maxLength: 80000
+                  default: ""
+                response_headers:
+                  type: string
+                  default: "{}"
+                principal:
+                  type: string
+                  default: ""
+                session_id:
+                  type: string
+                  default: ""
+      responses:
+        "200":
+          description: Query-log receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/comparison:
+    get:
+      tags: [Comparison]
+      operationId: comparison_get
+      summary: Read the comparison matrix
+      description: Returns the current bounded browser-versus-CLI comparison matrix.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Comparison matrix
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+    post:
+      tags: [Comparison]
+      operationId: comparison_add
+      summary: Add a comparison-matrix entry
+      description: Adds or updates one evidence-backed comparison record.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query_label]
+              properties:
+                query_label:
+                  type: string
+                browser_result:
+                  type: string
+                  default: ""
+                cli_result:
+                  type: string
+                  default: ""
+                match:
+                  type: string
+                  enum: [true, false, partial, unknown]
+                  default: unknown
+                notes:
+                  type: string
+                  default: ""
+      responses:
+        "200":
+          description: Comparison receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/comparison/export:
+    get:
+      tags: [Comparison]
+      operationId: comparison_export
+      summary: Export comparison evidence
+      description: Returns the current comparison matrix as formatted Markdown.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Comparison export
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+  /v1/probes/simulate:
+    post:
+      tags: [Diagnostics]
+      operationId: simulate_probe
+      summary: Run a dry simulated probe
+      description: Exercises the probe pipeline without performing a live external mutation.
+      x-openai-isConsequential: false
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                audit_id:
+                  type: string
+                  default: test
+                scenario:
+                  type: string
+                  default: pipeline_test
+                operator:
+                  type: string
+                  default: nexus-sage
+                mode:
+                  type: string
+                  enum: [dry_run]
+                  default: dry_run
+                query_label:
+                  type: string
+                  default: Q0
+      responses:
+        "200":
+          description: Simulated probe result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: NEXUS_API_KEY
+  schemas:
+    ToolResponse:
+      type: object
+      additionalProperties: true
