@@ -8,6 +8,7 @@ import {
   Wrench,
   Network,
   ArrowLeftRight,
+  Globe,
   Activity,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ const LINKS = [
   { href: "/mcp", label: "MCP", icon: Wrench },
   { href: "/lanes", label: "Lanes", icon: Network },
   { href: "/handoffs", label: "Handoffs", icon: ArrowLeftRight },
+  { href: "/browserless", label: "Browserless", icon: Globe },
 ] as const;
 
 export function OpsNav() {
