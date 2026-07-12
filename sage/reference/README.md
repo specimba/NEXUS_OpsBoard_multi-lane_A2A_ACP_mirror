@@ -35,6 +35,32 @@ SAGE and this Ops Board are **two views of the same backend**:
   (qwen_webdev, mimo_claw, gemini, minimax, mistral_code, intern_gpu,
   meta_muse, apodex, glm52). The two registries overlap on Grok/Zo/DeepSeek/ChatGPT.
 
-See `../docs/SAGE_ANALYSIS.md` for the full integration analysis and the staged
+See `../docs/SAGE_ANALYSIS.md` for the v1 integration analysis and the staged
 plan to reconcile the two registries and bridge the Action Gateway into the Ops
-Board.
+Board. See `../docs/SAGE_V1_1_ANALYSIS.md` for the v1.1 hardening-pack delta
+analysis (5 P0 findings, contracted surface, gateway upgrade gap list).
+
+## v1.1 hardening pack (`v1_1/`)
+
+Retrieved 2026-07-12 from the same Drive folder after new files appeared. The
+v1.1 pack is a **hardened contraction** of v1 driven by a 909-line local-dev
+audit that found 5 P0 issues (compromised credential, HTTP 421 on the bridge,
+cached-duplicate test invalidation, unsafe `/v1/program` arbitrary code
+execution, v2 endpoints overstating implementation).
+
+| File | Role |
+|------|------|
+| `v1_1/nexus_sage_v1_1_openapi.yaml` | v1.1 OpenAPI 3.1 spec — removes echo/probes/simulate/http-diagnostic/query-log/program; adds capabilities/grounding/jobs |
+| `v1_1/NEXUS_SAGE_LOCAL_DEV_AUDIT_2026-07-12.md` | The 909-line audit — 5 P0 findings |
+| `v1_1/sage_gateway_security.py` | Reference security middleware (ASGI, Python) |
+| `v1_1/sage_idempotency.py` | Reference 3-state idempotency store (SQLite) |
+| `v1_1/test_sage_gateway_contract.py` | Contract tests — idempotency + jobs + schema constraints |
+| `v1_1/redact_nexus_sage_logs.py` | Log redaction tool (P0 #1 remediation) |
+| `v1_1/REST_Facade_Walkthrough.md` + `_v2_ULTRA.md` | Walkthroughs |
+| `v1_1/NEXUS_SAGEv2.txt` | v2 GPT-builder transcript (expanded surface, largely contradicted by audit) |
+| `v1_1/SOL_Ultimate_Master_Integration_Plan_v1.md` + `_v2.md` | Master integration plans |
+| `v1_1/SOL_Advisory_Execution_Task_Tracker.md` | Execution task tracker |
+
+Also fetched but not committed (binary archives — retrieve on demand):
+`nexus_sage_v1_1_hardening_pack.zip`, `rotate_nexus_sage_secret.ps1` (the
+secret-rotation script for P0 #1).

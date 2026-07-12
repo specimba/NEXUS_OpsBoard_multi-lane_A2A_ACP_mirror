@@ -1,0 +1,724 @@
+openapi: 3.1.0
+info:
+  title: NEXUS SAGE v1.1 Action Gateway
+  version: 1.1.0
+  description: >
+    Hardened production surface for NEXUS SAGE. Provides observation,
+    proposal-only coordination, durable job submission, and append-only evidence.
+    Arbitrary code execution, simulations, raw diagnostics, and HERMES lifecycle
+    transitions are intentionally excluded.
+servers:
+  - url: https://actions.nexus.example
+security:
+  - bearerAuth: []
+tags:
+  - name: Observe
+  - name: Coordinate
+  - name: Evidence
+  - name: Jobs
+
+paths:
+  /v1/health:
+    get:
+      operationId: nexusHealth
+      tags: [Observe]
+      summary: Read gateway health
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /v1/capabilities:
+    get:
+      operationId: nexusCapabilities
+      tags: [Observe]
+      summary: Read enabled and disabled capabilities
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+
+  /v1/registry:
+    get:
+      operationId: nexusRegistry
+      tags: [Observe]
+      summary: Read tool registry and schema-drift state
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /v1/coordination/status:
+    get:
+      operationId: nexusCoordinationStatus
+      tags: [Observe]
+      summary: Read queue health and revision
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+
+  /v1/tasks:
+    get:
+      operationId: nexusListTasks
+      tags: [Observe]
+      summary: List coordination tasks
+      x-openai-isConsequential: false
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, claimed, done, failed]
+            default: all
+        - name: task_id
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: nexusProposeTask
+      tags: [Coordinate]
+      summary: Propose a task for HERMES
+      description: Does not claim, execute, complete, or fail the task.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskProposal"
+      responses:
+        "201":
+          $ref: "#/components/responses/Receipt"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Invalid"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /v1/a2a/topics:
+    get:
+      operationId: nexusListTopics
+      tags: [Observe]
+      summary: List approved A2A topics
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+
+  /v1/a2a/messages:
+    get:
+      operationId: nexusReadMessages
+      tags: [Observe]
+      summary: Read recent A2A messages
+      x-openai-isConsequential: false
+      parameters:
+        - name: topic
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: nexusPublishMessage
+      tags: [Coordinate]
+      summary: Publish one attributable A2A message
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/A2AMessage"
+      responses:
+        "201":
+          $ref: "#/components/responses/Receipt"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Invalid"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /v1/sessions/status:
+    get:
+      operationId: nexusSessionStatus
+      tags: [Observe]
+      summary: Read session heartbeat state
+      x-openai-isConsequential: false
+      parameters:
+        - name: session_id
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+
+  /v1/sessions/heartbeat:
+    post:
+      operationId: nexusHeartbeat
+      tags: [Coordinate]
+      summary: Record an ephemeral session heartbeat
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Heartbeat"
+      responses:
+        "200":
+          $ref: "#/components/responses/Receipt"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /v1/grounding/manifest:
+    get:
+      operationId: nexusGroundingManifest
+      tags: [Observe]
+      summary: Read approved grounding-file metadata
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /v1/grounding/files/{name}:
+    get:
+      operationId: nexusReadGroundingFile
+      tags: [Observe]
+      summary: Read one approved grounding file with integrity metadata
+      x-openai-isConsequential: false
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - 01_PROJECT_STATE.md
+              - GROUNDING.md
+              - NEXUS_MANIFEST.md
+              - LANES.md
+              - AGENTS.md
+              - SKILLS.md
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /v1/evidence:
+    post:
+      operationId: nexusCaptureEvidence
+      tags: [Evidence]
+      summary: Append integrity-bearing evidence
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvidenceRecord"
+      responses:
+        "201":
+          $ref: "#/components/responses/Receipt"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /v1/audit:
+    post:
+      operationId: nexusAppendAudit
+      tags: [Evidence]
+      summary: Append a structured audit event
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditRecord"
+      responses:
+        "201":
+          $ref: "#/components/responses/Receipt"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/TooLarge"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /v1/comparison:
+    get:
+      operationId: nexusGetComparison
+      tags: [Observe]
+      summary: Read comparison records
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+    post:
+      operationId: nexusAddComparison
+      tags: [Evidence]
+      summary: Append a comparison record
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComparisonRecord"
+      responses:
+        "201":
+          $ref: "#/components/responses/Receipt"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /v1/jobs:
+    post:
+      operationId: nexusSubmitJob
+      tags: [Jobs]
+      summary: Submit an allowlisted durable job for HERMES
+      description: Creates a queued job; SAGE does not claim or execute it.
+      x-openai-isConsequential: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobSubmission"
+      responses:
+        "202":
+          $ref: "#/components/responses/Receipt"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Invalid"
+
+  /v1/jobs/{job_id}:
+    get:
+      operationId: nexusJobStatus
+      tags: [Jobs]
+      summary: Read durable job state
+      x-openai-isConsequential: false
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        "200":
+          $ref: "#/components/responses/Ok"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/jobs/{job_id}/cancel:
+    post:
+      operationId: nexusCancelJob
+      tags: [Jobs]
+      summary: Request cancellation of a queued or running job
+      x-openai-isConsequential: true
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Receipt"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: NEXUS_API_KEY
+
+  schemas:
+    ApiEnvelope:
+      type: object
+      required: [ok, request_id, timestamp, schema_version]
+      properties:
+        ok:
+          type: boolean
+        request_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        schema_version:
+          type: string
+          const: "1.1"
+        data:
+          type: object
+          additionalProperties: true
+        error:
+          type: [object, "null"]
+          additionalProperties: true
+      additionalProperties: false
+
+    ErrorEnvelope:
+      type: object
+      required: [ok, request_id, timestamp, schema_version, error]
+      properties:
+        ok:
+          type: boolean
+          const: false
+        request_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        schema_version:
+          type: string
+          const: "1.1"
+        error:
+          type: object
+          required: [code, message, retryable]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            retryable:
+              type: boolean
+            details:
+              type: [object, "null"]
+              additionalProperties: true
+          additionalProperties: false
+      additionalProperties: false
+
+    ActionReceipt:
+      type: object
+      required:
+        - receipt_id
+        - operation
+        - lane
+        - status
+        - attempt
+        - timestamp
+      properties:
+        receipt_id:
+          type: string
+        operation:
+          type: string
+        lane:
+          type: string
+          enum: [SAGE-C1, SAGE-E1]
+        status:
+          type: string
+          enum: [accepted, queued, recorded, duplicate, rejected, failed, cancelled]
+        source_msg_id:
+          type: [string, "null"]
+        task_id:
+          type: [string, "null"]
+        attempt:
+          type: integer
+          minimum: 1
+        evidence_hash:
+          type: [string, "null"]
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: [string, "null"]
+      additionalProperties: false
+
+    IdempotentFields:
+      type: object
+      required: [idempotency_key]
+      properties:
+        idempotency_key:
+          type: string
+          minLength: 16
+          maxLength: 200
+
+    TaskProposal:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [kind, prompt, priority, lane]
+          properties:
+            kind:
+              type: string
+              enum: [research, audit, probe, remediate, diagnostic, integration, implementation, execution]
+            prompt:
+              type: string
+              maxLength: 20000
+            priority:
+              type: integer
+              minimum: 1
+              maximum: 10
+            lane:
+              type: string
+              const: SAGE-C1
+            session_id:
+              type: [string, "null"]
+              maxLength: 200
+            source_msg_id:
+              type: [string, "null"]
+              maxLength: 200
+
+    A2AMessage:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [topic, message, sender, lane]
+          properties:
+            topic:
+              type: string
+              maxLength: 200
+            message:
+              type: string
+              maxLength: 20000
+            sender:
+              type: string
+              const: nexus-sage
+            lane:
+              type: string
+              const: SAGE-C1
+            session_id:
+              type: [string, "null"]
+              maxLength: 200
+            source_msg_id:
+              type: [string, "null"]
+              maxLength: 200
+
+    Heartbeat:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [session_id, status, lane]
+          properties:
+            session_id:
+              type: string
+              maxLength: 200
+            status:
+              type: string
+              enum: [alive, idle, blocked, closing]
+            lane:
+              type: string
+              const: SAGE-C1
+            metadata:
+              type: object
+              additionalProperties: true
+
+    EvidenceRecord:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [label, content, lane, provenance]
+          properties:
+            label:
+              type: string
+              maxLength: 500
+            content:
+              type: string
+              maxLength: 70000
+            lane:
+              type: string
+              const: SAGE-E1
+            provenance:
+              $ref: "#/components/schemas/Provenance"
+
+    Provenance:
+      type: object
+      required: [source_type, confidence]
+      properties:
+        source_type:
+          type: string
+          enum: [user, file, web, action, repository, runtime, model, inference]
+        source_ref:
+          type: [string, "null"]
+          maxLength: 1000
+        confidence:
+          type: string
+          enum: [high, medium, low]
+      additionalProperties: false
+
+    AuditRecord:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [scenario, data, lane]
+          properties:
+            scenario:
+              type: string
+              maxLength: 500
+            data:
+              type: object
+              additionalProperties: true
+            lane:
+              type: string
+              const: SAGE-E1
+            session_id:
+              type: [string, "null"]
+              maxLength: 200
+
+    ComparisonRecord:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [query_label, match, lane]
+          properties:
+            query_label:
+              type: string
+              maxLength: 200
+            browser_result:
+              type: string
+              maxLength: 15000
+            cli_result:
+              type: string
+              maxLength: 15000
+            match:
+              type: string
+              enum: ["true", "false", partial, unknown]
+            notes:
+              type: string
+              maxLength: 10000
+            lane:
+              type: string
+              const: SAGE-E1
+
+    JobSubmission:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [workflow_type, parameters, lane]
+          properties:
+            workflow_type:
+              type: string
+              enum:
+                - grounding_audit
+                - evidence_search
+                - model_health_snapshot
+                - parallel_audit_proposal
+            parameters:
+              type: object
+              additionalProperties: true
+            lane:
+              type: string
+              const: SAGE-C1
+            session_id:
+              type: [string, "null"]
+              maxLength: 200
+            source_msg_id:
+              type: [string, "null"]
+              maxLength: 200
+
+    CancelRequest:
+      allOf:
+        - $ref: "#/components/schemas/IdempotentFields"
+        - type: object
+          required: [reason, lane]
+          properties:
+            reason:
+              type: string
+              maxLength: 1000
+            lane:
+              type: string
+              const: SAGE-C1
+
+  responses:
+    Ok:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiEnvelope"
+    Receipt:
+      description: Action receipt
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ActionReceipt"
+    Invalid:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Conflict:
+      description: Idempotency or lifecycle conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    TooLarge:
+      description: Payload too large
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Unavailable:
+      description: Dependency unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
