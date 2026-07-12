@@ -1,0 +1,10 @@
+{
+  "name": "nexus-sage-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NEXUS SAGE Action Gateway — governed REST facade over the Grok MCP Bridge v2. Bearer auth, idempotency, receipts. Deployable next to the bridge on the Windows host; exposed via ngrok.",
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts"
+  }
+}
