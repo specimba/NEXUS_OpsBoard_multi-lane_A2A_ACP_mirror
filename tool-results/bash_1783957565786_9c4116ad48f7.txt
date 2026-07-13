@@ -1,0 +1,347 @@
+Agent: Dashboard UX / Operator Experience
+Task: Analyze NEXUS OS dashboard UI components, operator workflows, and UX patterns (9 tabs + global components)
+
+Work Log:
+- Read prior worklog entries ARCH-1 (lines 116-434) and DATA-1 (lines 436-836) for architectural and data-modeling context.
+- Read all 9 tab components in src/components/nexus/tabs/: overview-tab.tsx (1850L), stresslab-tab.tsx (1454L), gmr-tab.tsx (2054L), governor-tab.tsx (2088L), vault-tab.tsx (1049L), research-tab.tsx (1315L), swarm-tab.tsx (1858L), tokens-tab.tsx (956L), rate-limit-tab.tsx (463L).
+- Read 14 global components in src/components/nexus/: header.tsx (358L), sidebar.tsx (205L), footer.tsx (179L), command-palette.tsx (161L), ai-assistant.tsx (394L), notification-center.tsx (249L), system-logs.tsx (244L), diagnostics-panel.tsx (382L), charts.tsx (222L), export-button.tsx (154L), global-export-dialog.tsx (469L), quick-stats-widget.tsx (128L), session-timeline.tsx (138L), system-architecture.tsx (238L), keyboard-shortcuts.tsx (144L), tab-content.tsx (84L).
+- Read app entry: src/app/page.tsx (62L), src/app/layout.tsx (50L), src/app/globals.css (1137L) for design system tokens.
+- Read state mgmt: src/store/nexus-store.ts (117L Zustand), src/hooks/use-api-data.ts (80L polling), src/hooks/use-swarm-ws.ts (163L Socket.IO), src/hooks/use-mounted.ts (20L SSR guard).
+- Read fusion-pack/NEXUS_FUSION_PACK.md (350L) — canonical WIRED/MOCK/SIM badge map + tech stack + differentiators.
+- Cross-referenced UI claims with DATA-1 backend reality (3 parallel trust systems, no ActivityFeed model, /api/system ignored by overview-tab, hardcoded rotation/failover events, fake vault chain hashes).
+
+Key Findings:
+
+A. TAB-BY-TAB UX AUDIT
+======================
+
+1. OVERVIEW-TAB (1850L) — SIMULATED (worst offender)
+   - Purpose: 8-pillar health grid + activity feed + governance stats + system timeline
+   - Key widgets: 8 pillar cards (Bridge/Engine/Governor/Vault/GMR/Swarm/Monitor/Config), 24h Health Timeline (NexusStackedAreaChart w/ 6h/12h/24h toggle), LiveActivityFeed (rotating 12 canned messages every 3s), SystemUptimeCard (starts at 3d 14h 27m 52s hardcoded), SystemNotificationsCard, SystemArchitectureMiniMap (8 nodes in circle w/ SVG animateMotion dots), QuickStatsBar (requestCount random increment), AnimatedCounter, Pillar Detail Dialog w/ 8-point sparkline, Diagnostics trigger, View All Pillars dialog
+   - Data source: 100% MOCK — pillarDetails/pillarSparklines/pillarHealthHistory/initialActivities/newActivities/systemStatusExport/collapseRateTrend/systemNotificationsData/recentDecisions all hardcoded arrays. seededRandom() fakes timeline variability. /api/system endpoint (which computes real pillar health from 11 Prisma models per DATA-1) is NEVER called.
+   - Operator workflow: open dashboard → land here → see what looks like real-time system but isn't
+   - Strongest: visual polish, pillar detail dialog, 8-pt sparkline history, diagnostic modal with sequential execution
+   - Weakest: TOTAL fake. Header token budget "73,450" hardcoded. Uptime counter resets on reload. Activity feed cycles same 12 messages. "Live" badge is misleading.
+
+2. STRESSLAB-TAB (1454L) — WIRED (strongest component per fusion-pack)
+   - Purpose: ISC-Bench test execution + model comparison + collapse-rate analytics
+   - Key widgets: Templates sub-tab (12 templates, difficulty pie chart, domain coverage), Runs sub-tab (history table, collapse-rate trend chart), Compare sub-tab (model comparison dialog), Arena sub-tab (5-model leaderboard), RunTestDialog (model + mode select, progress bar stalls at 90%), BatchRunDialog (multi-select templates + single model), TestHistoryChart (10/20/all toggle)
+   - Data source: WIRED — useApiData('/api/stresslab', 15s). POST action=run_test makes real ZAI SDK call. BUT allTestHistoryData (20-pt collapse rate) and domainCoverage (6 domains) and arenaData (5 models) are HARDCODED fallbacks. Per DATA-1: token count is word×1.3 heuristic, vapProofHash is `vap-${runId}-${Date.now().toString(36)}` (NOT cryptographic), SessionBudget NOT updated by /api/stresslab.
+   - Operator workflow: Templates → Run Test → select model+mode → Execute → toast → run appears in Runs tab (3 clicks + 2 selects)
+   - Strongest: full lifecycle (DB → LLM → validation → persist), batch runs, model compare dialog, polished progress UI
+   - Weakest: token estimation is heuristic, validatorCode field ignored (uses own validateResponse heuristics), budget undercounts stresslab usage, hardcoded collapse-rate baseline series
+
+3. GMR-TAB (2054L) — WIRED+MOCK
+   - Purpose: model registry + dual-pool (FAST/PREMIUM) + rotation analytics + AI bridge routing
+   - Key widgets: 6 sub-tabs (Registry/Pool Status/Rotation Log/Failover Log/Analytics/AI Bridge), ProviderRoute cards w/ tier icons (reasoning/balanced/fast/free), LatencyHistoryChart (3 models 10m→now), Failover log w/ severity badges, Optimization stats (4 categories)
+   - Data source: WIRED+MOCK — /api/models real (toggle + health_check actually pings ZAI). MOCK_BRIDGE_DATA (4 hardcoded routes), failoverLog (5 events), rotationAnalytics (mostRotatedTo/From), latencyHistory, OPTIMIZATION_STATS all hardcoded. Per DATA-1: no RotationEvent/FailoverEvent Prisma models, no circuit_breaker_state field on ModelEntry.
+   - Operator workflow: Registry → toggle model on/off → health check → view pool status
+   - Strongest: dual-pool visualization, fallback chain display, latency trend chart, failover severity color-coding
+   - Weakest: rotation/failover events are fabricated, no circuit breaker state exposed, AI Bridge routes are mock, pool assignments hardcoded in footer (PREMIUM=['trinity-large-preview','minimax-m2.5'] etc.)
+
+4. GOVERNOR-TAB (2088L) — WIRED
+   - Purpose: trust scoring + threshold management + danger patterns + decision audit
+   - Key widgets: Decisions table (real), TrustStats per agent (real), 4 threshold sliders (research/review/audit/impl), DangerPatterns add dialog, ConstitutionRules card (built from API config + decisions), LiveDecisionFeed (4-8s simulated cadence), DecisionTimeline horizontal, DecisionDistribution pie (real), ImpactDistribution pie (real), Agent Risk Matrix scatter
+   - Data source: WIRED — useApiData('/api/governor', 15s). POST actions: appeal, update_threshold, add_pattern. BUT getLaneForAgent() is heuristic (infers lane from agent name + trust score). Per DATA-1: thresholds stored but NEVER enforced anywhere, no ConstitutionAudit, no TrustHistory time-series, CDR stage is local heuristic not Python canonical trust_engine_v2.
+   - Operator workflow: Agents → select agent → adjust threshold sliders → Save → toast (2 clicks + drags)
+   - Strongest: threshold sliders with impact warnings, decision timeline with hover tooltips, appeal workflow, decision distribution charts
+   - Weakest: thresholds are documentation not policy (no enforcement), lane is inferred from name not modeled, no trust trajectory sparkline (only current snapshot), LiveDecisionFeed uses fake reasons (liveFeedReasons array of 10 canned strings)
+
+5. VAULT-TAB (1049L) — WIRED (but chain is decorative)
+   - Purpose: 5-track memory browser (EVENT/TRUST/CAP/FAIL/GOV) + chain verification
+   - Key widgets: 5-track tabbed browser with track-specific color theming (bgColor/textColor/borderColor/headerGradient), search across key+agent+value+id, entry detail dialog with JSON pretty-print + copy, Verify Chain button with result modal, pie chart (real from trackCounts), VAP chain visualization (10 most-recent blocks w/ hash+prev+type+summary+ts), Recent activity timeline
+   - Data source: WIRED — useApiData('/api/vault', 15s). POST action=verify_chain. BUT chain block hashes are FAKE: `0x${e.id.slice(0,4)}...${String(Math.abs(e.rawEntry.id.charCodeAt(0)*31+i*17)).slice(0,4)}`. Per DATA-1: verify_chain only checks timestamps + JSON parse + score range — NOT cryptographic. No filter params in GET (always returns latest 100, UI filters client-side). No prev_hash/entry_hash/signature fields on VaultEntry.
+   - Operator workflow: filter by track OR search → click entry → detail dialog → verify chain (3 clicks)
+   - Strongest: 5-track color theming is consistent and beautiful, JSON formatter, search breadth (4 fields), verify UX with issue list
+   - Weakest: chain hashes are decorative (computed from ID), no real tamper detection, no server-side filtering, no poisoning detection UI (Python poisoning.py exists but unwired per ARCH-1)
+
+6. RESEARCH-TAB (1315L) — WIRED (but pipeline dead-ends)
+   - Purpose: paper priority queue (P0/P1/P2) + 5-step intake pipeline visualization
+   - Key widgets: 3-column P0/P1/P2 layout with priority color coding (red/orange/emerald), paper detail dialog w/ arXiv link + copy-to-clipboard + mark-in-progress, Add-to-queue dialog (local-only), daily practice timer (local-only), 5-step INTAKE/VETTING/MANIFEST/PRIORITY/DELIVER pipeline w/ time estimates, domain options
+   - Data source: WIRED — useApiData('/api/research', 15s). PUT updates priorityTier/isVetted/implementationTask. BUT per DATA-1: NO POST endpoint to add new papers, NO external arXiv/Alphaxiv API call. 6 seeded papers only. Practice timer resets on tab switch (no localStorage). Add-to-queue is client-side only.
+   - Operator workflow: view P0 papers → click paper → mark in-progress (2 clicks)
+   - Strongest: P0/P1/P2 column layout is scannable, arxiv link auto-detection from ID regex, priority color coding
+   - Weakest: NO way to discover new papers (dead-end UI per DATA-1), practice timer doesn't persist, 5-step pipeline is aspirational not functional
+
+7. SWARM-TAB (1858L) — WIRED with WS
+   - Purpose: worker pool management + task queue + WebSocket live updates
+   - Key widgets: Worker grid with status-specific card styling (busy=emerald gradient, error=red pulse-border, offline=opacity-60), stats cards (total/busy/idle/error/offline), TaskQueue (HARDCODED fallback), RecentCompleted (HARDCODED fallback), SpawnWorkerDialog, ReassignTaskDialog, Worker detail dialog w/ sparkline + task history, useSwarmWS hook integration
+   - Data source: WIRED — useApiData('/api/swarm', 15s) + useSwarmWS() for live updates. POST actions: spawn_worker, reassign_task, terminate_worker, restart_worker, update_trust. BUT per DATA-1: spawn_worker creates Agent row + VaultEntry audit but NO Python TeamCoordinator dispatch, NO OpenClaw agent directory, NO .task.md queue. taskQueue and recentCompleted are hardcoded fallbacks even when API has workers data.
+   - Operator workflow: Spawn Worker button → fill name/type/domain → Spawn (3 clicks + form). Per worker: click card → detail dialog → Reassign/Restart/Terminate
+   - Strongest: per-status card styling is exemplary, WebSocket live updates, trust score display, 5 worker types + 7 domains
+   - Weakest: spawn is DB-only (no real process), task queue and recent completed are hardcoded, reassign_task doesn't actually move a task
+
+8. TOKENS-TAB (956L) — WIRED with hardcoded extras
+   - Purpose: token budget + usage logs + per-agent/model breakdown + heatmap
+   - Key widgets: Budget progress bar, HourlyUsage area chart, PerAgentUsage bar chart, PerModelUsage table, Agent×Hour heatmap, 4 Optimization suggestions (HARDCODED), Dismissable alerts, model usage trend sparklines (computed from log data)
+   - Data source: WIRED — useApiData('/api/tokens', 30s). Real budget, usageLogs, agentUsage. BUT burnRate = 142 (hardcoded constant), optimizationSuggestions (4 items hardcoded), avgLatency = 0 (TokenUsageLog doesn't track latency). Per DATA-1: SessionBudget undercounts because /api/stresslab writes TokenUsageLog but skips budget update; /api/ai-bridge and /api/chat consume tokens silently with no logging.
+   - Operator workflow: view budget → check per-agent breakdown → dismiss optimization suggestion (1 click to dismiss)
+   - Strongest: heatmap visualization, per-agent/model breakdown, dismissal interaction
+   - Weakest: burn rate is hardcoded 142, optimization suggestions are fabricated (no /api/cost-optimizer), avgLatency always 0, budget undercounts silently
+
+9. RATE-LIMIT-TAB (463L) — WIRED (cleanest)
+   - Purpose: 5-provider rate limit monitoring (openrouter/jina/kilocode/cerebras/openai)
+   - Key widgets: ProviderCard (5 cards) w/ RPM/RPD usage bars, CooldownTimer (live countdown), key health badge, last error display, 4-stat mini-grid (Total/Rejected/429s/Queue), Summary card, NexusBarChart for provider stats
+   - Data source: WIRED — manual fetch('/api/rate-limit/status') with 10s polling. Real rate-limiter/api-key-manager/api-cache in-memory state. Per DATA-1: N+1 query pattern (6 providers × findMany 100 rows each on every GET), no time-series (just current snapshot).
+   - Operator workflow: view provider cards → check cooldown timer → wait for recovery (read-only, 0 clicks)
+   - Strongest: live cooldown countdown, color-coded health (green<50%/yellow<80%/red), real infrastructure data, no fake elements
+   - Weakest: no historical 429 trend chart, N+1 query on every poll, no per-key drill-down
+
+B. GLOBAL COMPONENT PATTERNS
+============================
+
+LAYOUT MODEL (page.tsx):
+- flex h-screen overflow-hidden
+- Left: NexusSidebar (desktop: inline collapsible w-56/w-16, mobile: Sheet)
+- Right column: NexusHeader (top h-14) → main TabContent (flex-1 overflow-auto) → NexusFooter (bottom h-9)
+- Floating overlays: NexusAssistant (bottom-right slide-in), QuickStatsWidget (bottom-left desktop only), NexusCommandPalette (⌘K dialog), SystemLogsPanel (⌘L slide-up), KeyboardShortcuts (? dialog), DiagnosticsPanel (overview dialog), NotificationCenter (header popover), GlobalExportDialog (⌘E dialog)
+
+NAVIGATION MODEL:
+- 9 tabs in sidebar: overview/stresslab/gmr/governor/vault/research/swarm/tokens/ratelimit
+- Each tab has numbered index shown in sidebar (1-9) but ONLY 1-8 wired to keyboard shortcuts (ratelimit is 9th, no shortcut — GAP)
+- Tab switching methods:
+  1. Click sidebar item (activeTab in Zustand)
+  2. Number keys 1-8 (no modifier, command-palette.tsx listener)
+  3. ⌘K command palette → nav command
+  4. Sidebar tooltips (in collapsed mode) show shortcut
+- Framer Motion AnimatePresence mode="wait" with staggerContainer/staggerItem variants on tab change
+
+SHORTCUTS (declared in keyboard-shortcuts.tsx help vs ACTUALLY WIRED):
+- ⌘K: command palette — WIRED ✓ (command-palette.tsx)
+- 1-8: tab nav — WIRED ✓ (command-palette.tsx)
+- ⌘L: system logs — WIRED ✓ (header.tsx)
+- ⌘E: export dialog — WIRED ✓ (header.tsx)
+- ?: keyboard shortcuts help — WIRED ✓ (page.tsx)
+- Esc: close dialog — WIRED ✓ (Dialog onOpenChange)
+- ⌘B: toggle sidebar — DECLARED but NOT WIRED ✗
+- ⌘D: theme toggle — DECLARED but NOT WIRED ✗ (header has button only)
+- ⌘N: notifications — DECLARED but NOT WIRED ✗ (header bell click only)
+- R: run diagnostic — DECLARED but NOT WIRED ✗
+- S: open AI assistant — DECLARED but NOT WIRED ✗
+- /: focus search — DECLARED but NOT WIRED ✗
+- P: pause activity feed — DECLARED but NOT WIRED ✗
+- GAP: 7 of 12 documented shortcuts don't work. Operator muscle-memory breaks.
+
+ZUSTAND STORE (nexus-store.ts, 117L):
+- State: activeTab, sidebarOpen, isChatOpen, chatMessages[], notifications[], isNotificationCenterOpen, isExportDialogOpen
+- 10 initial hardcoded notifications (mock data seeded on app start)
+- chatMessages NOT persisted (lost on refresh — per DATA-1 GAP 6)
+- notifications use counter for ID generation (no UUID)
+- No middleware (no persist, no devtools) — vanilla Zustand
+- Single store for ALL UI state (no slicing)
+
+C. OPERATOR WORKFLOW ANALYSIS (5 KEY TASKS)
+============================================
+
+(1) CHECK SYSTEM HEALTH
+- Path: dashboard loads → overview tab (default)
+- Clicks: 0 (auto-loaded)
+- Data shown: 8 pillar cards (hardcoded health 88-100), uptime "3d 14h 27m 52s" (hardcoded start), 24h timeline (seededRandom), 12 rotating activities (canned), 5 notifications (hardcoded), 5 recent decisions (hardcoded), quick stats (requestCount random +5s)
+- What's missing: real pillar health from /api/system (already computes it), real ActivityFeed (DATA-1 GAP 4), real notifications derived from events, real uptime from server startup, real request count
+
+(2) SPAWN + MANAGE A WORKER
+- Path: sidebar Swarm → "Spawn Worker" → SpawnWorkerDialog → name + type + domain → "Spawn Worker"
+- Clicks: 3 (tab, spawn-btn, submit) + 3 form fields
+- Data shown: 5 worker cards w/ status/trust/tokens/tasksDone, stats cards, task queue (hardcoded T-0850..T-0853), recent completed (hardcoded T-0842..T-0847), WS live updates (5 channels: worker-update, task-complete, task-queued, metrics, activity)
+- What's missing: real TeamCoordinator dispatch (per DATA-1: just DB row), real OpenClaw agent directory (~/.openclaw/agents/{worker}/tasks/pending/), real task movement on reassign, real worker process health, per-worker skill registry (DATA-1 GAP 9)
+
+(3) RUN A STRESS TEST
+- Path: sidebar StressLab → Templates → "Run Test" → RunTestDialog → model + mode → "Execute Test"
+- Clicks: 3 (tab, run-btn, submit) + 2 selects
+- Data shown: 12 templates w/ difficulty badges, domain coverage pie (hardcoded), collapse rate trend (hardcoded 20-pt series), arena leaderboard (5 models hardcoded), progress bar stalls at 90% until API responds
+- What's missing: real validatorCode execution (route uses own heuristics), real token counting (word×1.3), real VAP hash (just unique ID), budget update (skipped per DATA-1), Python HermesRouter/GMR/SkillSmith involvement
+
+(4) ADJUST GOVERNANCE THRESHOLDS
+- Path: sidebar Governor → "Thresholds" section → 4 sliders → "Save Changes"
+- Clicks: 2 (tab, save) + 4 slider drags
+- Data shown: 4 threshold sliders (research/review/audit/impl), impact warnings per lane, danger patterns list, appeal workflow, live decision feed (simulated cadence)
+- What's missing: ENFORCEMENT (per DATA-1: thresholds stored as JSON but no route checks them), audit trail (no ConstitutionAudit), real KAIJU authz, real TrustEngineV2 (uses local heuristic instead)
+
+(5) INVESTIGATE A VAULT ENTRY
+- Path: sidebar Vault → click track tab OR search box → click entry row → detail dialog
+- Clicks: 3 (tab, filter, entry)
+- Data shown: 5-track color-coded browser, 100 latest entries, JSON-pretty-printed value, score/agent/timestamp, track-specific gradient headers, VAP chain visualization (10 blocks w/ hash+prev+type+summary), Verify Chain button with issue list
+- What's missing: real cryptographic chain (hashes are fake per DATA-1), server-side filtering (always returns latest 100), tamper detection (verify only checks timestamps + JSON parse), poisoning detection UI (Python poisoning.py unwired), prev_hash/entry_hash/signature fields on VaultEntry model
+
+D. DATA SOURCE BADGE SYSTEM
+===========================
+
+CANONICAL MAP (fusion-pack/NEXUS_FUSION_PACK.md §4.1):
+- 🟢 WIRED (8): stresslab-tab, governor-tab, vault-tab, research-tab, swarm-tab, tokens-tab, rate-limit-tab, ai-assistant, command-palette
+- 🟡 WIRED+MOCK (1): gmr-tab
+- 🟡 SIMULATED (2): overview-tab, system-logs
+- 🔴 MOCK (1): notification-center
+
+CONSISTENCY: The fusion-pack MAPS this clearly as a developer artifact. BUT the dashboard UI itself does NOT expose these badges to the operator. There is no visual indicator on a card saying "WIRED" vs "MOCK". The operator cannot tell that the Overview tab's pillar health is fake while the Governor tab's decisions are real.
+
+WHERE IT BREAKS:
+1. Overview tab presents identically to real tabs (no disclaimer, no badge, no dimmed styling)
+2. Footer error count: 8% random chance per 5s — fake but presented as real
+3. Footer rate limit status: random walk every 15s — fake
+4. Header token budget "73,450" hardcoded — fake
+5. Header "3 agents" badge hardcoded — fake
+6. Quick Stats Widget: token budget from real API but uptime starts at "0d 3h 42m" hardcoded — partial fake
+7. Notification Center: 10 initial notifications hardcoded + simulated ones added every 30-60s from 12 templates — fake
+8. System Logs: entirely fabricated from 20 hardcoded templates — fake
+9. Governor Live Decision Feed: real decisions but FAKE reasons (liveFeedReasons array of 10 canned strings)
+10. Vault chain blocks: fake hashes computed from entry ID charCodeAt — fake
+11. Tokens optimization suggestions: hardcoded 4 items — fake
+12. GMR rotation log/failover log/rotation analytics: hardcoded — fake
+13. Research practice timer: resets on tab switch — partial fake
+14. Tokens burn rate "142 tok/min": hardcoded constant — fake
+
+CRITICAL UX GAP: For an ops board where trust in data is paramount, the operator-facing badge system is absent. The fusion-pack is the source of truth but it's a developer artifact, not an operator-facing affordance.
+
+E. VISUAL DESIGN SYSTEM
+=======================
+
+COLOR PALETTE (globals.css, OKLCH-based):
+- Primary: oklch(0.508 0.164 155) light / oklch(0.65 0.2 155) dark — emerald-teal (hue 155)
+- Nexus accent: --nexus, --nexus-foreground, --nexus-dim, --nexus-glow (all hue 155)
+- Background: oklch(0.985 0.002 155) light / oklch(0.11 0.005 155) dark
+- Card: white / oklch(0.155 0.008 155)
+- Charts: 5 chart-N colors (varied hues)
+- Status colors (charts.tsx COLORS): emerald #34d399, red #f87171, orange #fb923c, yellow #facc15, blue #60a5fa, purple #a78bfa, pink #f472b6
+- Pillar colors: Bridge=emerald, Engine=blue, Governor=red, Vault=purple, GMR=orange, Swarm=yellow, Monitor=pink, Config=emerald (per overview-tab.tsx pillarColors)
+- Track colors (vault-tab.tsx): EVENT=emerald, TRUST=blue, CAP=orange, FAIL=red, GOV=purple
+
+"NEXUS-BG" AESTHETIC:
+- Dark OKLCH background with emerald glow accents
+- Custom CSS classes: .nexus-pulse (opacity 1↔0.5 / 2s), .nexus-glow-effect (box-shadow 2px↔8px / 3s), .gradient-text (linear-gradient emerald, webkit-background-clip:text), .shimmer (background-position animation), .pulse-border (border-color 20%↔60% / 2s), .hover-lift (translateY(-2px) + scale(1.01) + emerald-tinted shadow), .custom-scrollbar (4px, transparent track), .status-glow-green/yellow/red, .glass-card (frosted glass effect)
+
+CHART LIBRARY: Recharts (AreaChart, BarChart, PieChart, RadialBarChart, LineChart) wrapped in /components/nexus/charts.tsx with 4 primitives: MiniAreaChart, NexusBarChart, NexusGauge, NexusStackedAreaChart. All use hsl(var(--card)) for tooltip backgrounds — theme-aware. RechartsTooltip contentStyle standardized across charts.
+
+RESPONSIVE BREAKPOINTS:
+- useMediaQuery('(min-width: 768px)') for mobile/desktop sidebar (Sheet vs inline)
+- useMediaQuery('(min-width: 1024px)') for QuickStatsWidget visibility (lg)
+- sm: header hides token budget + export label below sm
+- md: footer hides center section below md
+- Sidebar collapses from w-56 to w-16 (logo + icons only) — TooltipProvider shows labels on hover
+
+DARK/LIGHT THEME:
+- next-themes ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange
+- Sun/Moon icon swap in header (rotate-0 scale-100 → dark:-rotate-90 dark:scale-0 transition)
+- OKLCH light palette: near-white background, white card
+- OKLCH dark palette: oklch(0.11) background, oklch(0.155) card
+- Dark theme is primary (light theme "needs polish" per fusion-pack §8 issue #8)
+
+TYPOGRAPHY: Geist Sans + Geist Mono (next/font/google). tabular-nums used heavily for numeric alignment. font-mono for IDs/timestamps.
+
+ANIMATIONS: Framer Motion (tab transitions w/ staggerContainer/staggerItem, AnimatePresence mode="wait"). SVG animateMotion for SystemArchitecture data-flow dots (deterministic durations to avoid hydration mismatch).
+
+F. UX GAPS FOR NEW OPS BOARD
+============================
+
+DO WELL (PRESERVE):
+1. ⌘K command palette (cmdk-based) — fast operator navigation, 16 commands across 2 groups
+2. 1-8 number shortcuts for tabs (no modifier) — power-user speed
+3. System Logs slide-up panel (⌘L) — log investigation without leaving tab
+4. ExportButton on every tab + GlobalExportDialog (⌘E) — CSV/JSON with column header mapping
+5. Per-status color coding (emerald=healthy, yellow=warning, red=error) — consistent semantic across tabs
+6. AnimatedCounter + LiveActivityFeed — gives "alive" feeling
+7. Per-track color coding in vault (5 distinct color systems per track)
+8. Toast notifications (sonner) for action feedback — consistent
+9. Worker card status styling (busy=emerald gradient, error=red pulse-border, offline=opacity-60)
+10. Decision Timeline horizontal viz with hover tooltips
+11. DiagnosticsPanel sequential step execution + latency display
+12. Mobile-responsive Sheet sidebar
+13. Pillar detail dialog with sparkline history
+14. Trust threshold sliders with impact warnings
+15. 5-track vault color theming (bgColor + textColor + borderColor + borderLeftColor + headerGradient)
+16. Filter + search combination pattern (vault tab)
+
+DO POORLY (FIX):
+1. **Overview tab 100% fake** — biggest trust killer. FIX: wire to /api/system (already computes real pillar health).
+2. **No data source badges in UI** — operator can't tell real from mock. FIX: subtle "WIRED/MOCK/SIM" dot badges on card headers, color-coded.
+3. **Hardcoded activity feed** — should come from real ActivityFeed table (DATA-1 GAP 4).
+4. **Hardcoded notifications** — should derive from real system events.
+5. **System Logs entirely fabricated** — should query VaultEntry + RateLimitLog.
+6. **Footer error count is random** — should be real error count from last 5m.
+7. **Footer rate limit status is random walk** — should be real from /api/rate-limit/status.
+8. **Header token budget hardcoded 73,450** — should be from /api/tokens.
+9. **Header "3 agents" badge hardcoded** — should be from /api/agents.
+10. **SystemConfigDialog "Save" just shows toast** — doesn't persist to /api/settings.
+11. **Chat messages not persisted** — lost on refresh (DATA-1 GAP 6).
+12. **No filter params in /api/vault GET** — always latest 100, UI filters client-side.
+13. **Vault chain hashes are fake** — computed from entry ID char codes.
+14. **No time-series trust data** — no TrustHistory model, no sparkline per agent per lane.
+15. **No real rotation/failover events** — GMR tab hardcodes these (DATA-1 GAP 2, 3).
+16. **No real cost optimization** — Tokens tab hardcodes 4 suggestions (DATA-1 GAP 5).
+17. **No real WebSocket for non-Swarm tabs** — only Swarm has live updates.
+18. **Token budget undercounts** — /api/stresslab, /api/ai-bridge, /api/chat don't all update SessionBudget.
+19. **No audit trail on settings changes** — operator can change OPENROUTER_API_KEY silently.
+20. **7 of 12 keyboard shortcuts documented in help don't actually work** (⌘B, ⌘D, ⌘N, R, S, /, P).
+21. **No "rate-limit" tab number shortcut** — only 1-8 work, rate-limit is 9th tab.
+22. **No global search across entities** — command palette only navigates, doesn't search agents/models/papers.
+23. **No breadcrumb or context retention** — switching tabs loses scroll position and filters.
+24. **No bulk operations** — can't select multiple workers to terminate, multiple papers to re-prioritize.
+25. **No comparison views** — can't compare two agents' trust trajectories side-by-side.
+26. **Modals block workflow** — every entity detail is a Dialog instead of a right-rail drawer.
+27. **No empty states** — most loading states show fake data instead of "no data yet".
+28. **Light theme unpolished** — fusion-pack §8 issue #8.
+29. **No SAGE accommodation** — see section G.
+
+SPECIFIC OPS BOARD LAYOUT RECOMMENDATIONS:
+- **Left rail**: persistent sidebar with 9 tabs + SAGE (10th) + collapse toggle (keep current pattern)
+- **Top bar**: tab title (keep) + LIVE token budget from /api/tokens + LIVE agent count from /api/agents + clock + notifications + export + logs + settings + theme (replace all hardcoded values)
+- **Main canvas**: tab content with framer-motion transitions (keep)
+- **Right rail (NEW)**: contextual inspector — when entity selected (agent/model/paper/vault entry), show details in right drawer instead of modal dialog. Modals block workflow.
+- **Bottom rail**: footer with REAL constitution limits from /api/system + REAL pool counts from /api/models + REAL error count from RateLimitLog + REAL rate limit status + session uptime + Live indicator
+- **Floating overlays**: AI Assistant (bottom-right), Quick Stats (bottom-left desktop), Command Palette (⌘K), System Logs (⌘L slide-up), Keyboard Shortcuts (?)
+- **NEW: Global Activity Feed dock** — bottom-center collapsible dock showing real cross-cutting ActivityFeed entries (DATA-1 GAP 4)
+- **NEW: Data Source Badge** — every card has tiny dot in corner: green=WIRED, yellow=WIRED+MOCK, red=SIMULATED/MOCK. Hover for details.
+- **NEW: SAGE Panel** — see section G
+
+G. SAGE ACCOMMODATION
+====================
+
+WHERE WOULD A SAGE PANEL FIT?
+Recommended: 10th sidebar tab + header pill. Tab shows: SAGE status, current analysis queue, recent insights, integration health. Header pill shows: SAGE online/offline + active analyses count.
+
+Alternative placements considered:
+- Right-rail contextual inspector (when SAGE is analyzing an entity) — complementary, not primary
+- Header widget alone (no tab) — too cramped for insight history
+- System Logs filter source only — insufficient visibility
+
+OBSERVABILITY HOOKS SAGE NEEDS:
+1. **ActivityFeed write access** — SAGE writes insights/events to ActivityFeed table (DATA-1 GAP 4) so they appear in global activity dock. New kind: 'sage_insight'.
+2. **Vault read access** — SAGE reads TRUST/CAP/FAIL tracks. Should use bridge vault/read (currently a stub per ARCH-1).
+3. **GovernorDecision write access** — SAGE recommendations that affect trust write GovernorDecision rows with action="sage_recommendation" so they appear in Governor tab.
+4. **TokenUsageLog write access** — SAGE's LLM calls must log tokens (currently /api/ai-bridge and /api/chat don't log per DATA-1).
+5. **WebSocket channel** — SAGE publishes to `sage:insight` socket event consumed by useSageWS hook (parallel to useSwarmWS).
+6. **/api/sage route** — GET returns SAGE status + recent insights; POST actions: analyze_entity, dismiss_insight, promote_to_decision.
+7. **Prisma model: SageInsight** — id, kind (anomaly/recommendation/prediction), target_type (agent/model/lane/vault_entry), target_id, summary, confidence, payload JSON, status (active/dismissed/promoted), created_at. Index on (target_type, target_id, status, created_at).
+8. **Notification source** — add "SAGE" to notification-center.tsx sourceColors map (currently has Governor/GMR/Swarm/Vault/StressLab/Research/Tokens/Monitor).
+9. **LogSource** — add "SAGE" to LogSource union in system-logs.tsx (currently BRIDGE/ENGINE/GOVERNOR/VAULT/GMR/SWARM/MONITOR/CONFIG).
+10. **Command Palette** — add "Ask SAGE" action command.
+
+HOW TO ANTICIPATE WITHOUT BLOCKING:
+- Reserve 10th sidebar slot NOW with "Coming Soon" badge (disabled click → toast "SAGE integration pending")
+- Add SAGE to all color/source maps NOW (placeholder color: #14b8a6 teal)
+- Define SageInsight Prisma model NOW (empty table, no rows)
+- Stub /api/sage route that returns {status: "not_implemented", insights: []} NOW
+- UI renders gracefully when SAGE is offline (gray pill, "SAGE offline" tab content, empty state in activity dock)
+- When SAGE arrives: flip the badge, populate the route, no UI restructuring needed
+
+Stage Summary:
+- 9 tabs audited. Wired status matches fusion-pack: 8 WIRED + 1 WIRED+MOCK + 2 SIMULATED + 1 MOCK (notifications). Per-tab data source honesty varies wildly: rate-limit-tab is 100% real; overview-tab is 100% fake.
+- 14 global components audited. Layout is sidebar+header+main+footer with 6 floating overlays. Zustand store is 117L vanilla (no middleware, no persistence). 7 of 12 documented keyboard shortcuts don't actually work.
+- 5 operator workflows traced: check health (0 clicks, all fake), spawn worker (3 clicks, DB-only no real dispatch), run stress test (3 clicks, real LLM but fake metrics), adjust thresholds (2 clicks, no enforcement), investigate vault (3 clicks, fake chain hashes).
+- Data source badge system EXISTS in fusion-pack but is NOT exposed to operator. 14 specific fake-data locations identified in UI.
+- Visual design system: OKLCH-based emerald-teal palette, Recharts, dark-theme-primary, framer-motion, custom CSS effects (pulse/glow/shimmer/hover-lift). Strong aesthetic, consistent semantic colors.
+- 29 specific UX gaps identified for new ops board. 16 strengths to preserve, 13 layout recommendations.
+- SAGE accommodation plan: 10th tab + header pill + 10 observability hooks + 5-step "anticipate without blocking" roadmap.
+
+RECOMMENDED NEXT ACTIONS (priority order):
+1. Wire overview-tab to /api/system (closes biggest fusion-pack gap, biggest UX trust issue).
+2. Add Data Source Badge component — tiny dot on every card header: green=WIRED, yellow=WIRED+MOCK, red=SIMULATED/MOCK. Hover tooltip shows fusion-pack status.
+3. Replace hardcoded header values (token budget, agent count) with live /api/tokens and /api/agents polling.
+4. Replace hardcoded footer values (error count, rate limit status) with real /api/rate-limit/status aggregation.
+5. Wire 7 documented-but-missing keyboard shortcuts (⌘B sidebar, ⌘D theme, ⌘N notifications, R diagnostic, S assistant, / search, P pause).
+6. Add "9" keyboard shortcut for rate-limit tab.
+7. Add right-rail contextual inspector pattern — convert entity-detail Dialogs to drawers (preserve modals only for destructive confirmations).
+8. Implement ActivityFeed model + Global Activity Feed dock (closes DATA-1 GAP 4 + enables real overview activity feed).
+9. Implement ChatMessage persistence (closes DATA-1 GAP 6).
+10. Reserve 10th sidebar slot for SAGE + stub /api/sage + add SAGE to all color/source maps.
+11. Add empty-state pattern across all tabs (replace fake fallbacks with "no data yet" + retry CTA).
+12. Polish light theme (fusion-pack §8 issue #8).

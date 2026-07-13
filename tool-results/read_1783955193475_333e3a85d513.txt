@@ -1,0 +1,435 @@
+     1→     1→# NEXUS A2A Control Plane — Worklog
+     2→     2→
+     3→     3→Shared work log for all agents working on the NEXUS control plane.
+     4→     4→Primary continuity file for GLM-5.2 sessions is `STATE.md`; this file records
+     5→     5→concrete per-task steps.
+     6→     6→
+     7→     7→---
+     8→     8→Task ID: 1
+     9→     9→Agent: GLM-5.2 (main orchestrator)
+    10→    10→Task: Milestone A — Scaffold (README, STATE.md, .env.example, lib foundation)
+    11→    11→
+    12→    12→Work Log:
+    13→    13→- Explored existing Next.js 16 project at /home/z/my-project (dev server already running on :3000).
+    14→    14→- Created src/lib/types.ts with LaneId (14 lanes), LaneStatus, HandoffCard, LedgerRow, McpToolInfo, McpHealth, McpQueueSnapshot.
+    15→    15→- Created src/lib/registry.ts — 14 lanes with success signals + wait policies + accent color helpers (dark ops palette).
+    16→    16→- Created src/lib/mcpTools.ts — all 22 Grok MCP tools (3 connectivity, 8 evidence, 6 queue, 5 session/a2a) + denylist (no shell/cookies/private IP/CDP drive).
+    17→    17→- Created src/lib/paths.ts — env resolution (NEXUS_LEDGER_PATH injectable, sample fallback), sample data paths.
+    18→    18→- Created src/lib/ledger.ts — JSONL tail reader + summarizer (byLane/byKind/byStatus).
+    19→    19→- Created src/lib/handoffBus.ts — in-memory global singleton + file-backed persist to data/handoffs.json.
+    20→    20→- Created .env.example, README.md, STATE.md.
+    21→    21→
+    22→    22→Stage Summary:
+    23→    23→- Domain foundation complete. 14 lanes + 22 MCP tools modeled with hardening facts encoded.
+    24→    24→- STATE.md marks Milestone A DONE, B IN PROGRESS.
+    25→    25→- Next: sample data files + all API routes (Milestone B).
+    26→    26→
+    27→    27→---
+    28→    28→Task ID: 2
+    29→    29→Agent: GLM-5.2 (main orchestrator)
+    30→    30→Task: Milestone B — Domain + APIs (sample data + all API routes)
+    31→    31→
+    32→    32→Work Log:
+    33→    33→- Created data/sample_ledger.jsonl (24 JSONL rows across cycles cyc_1042-1044, varied lanes/kinds/statuses).
+    34→    34→- Created data/sample_handoffs.json (6 seed handoff cards spanning grok/qwen_webdev/gemini/deepseek/zo/intern_gpu).
+    35→    35→- Created data/sample_mcp_health.json (bridge v2.4.1 payload, registry_hash 0xab12cd34, denied list).
+    36→    36→- API routes: /api/health (app liveness), /api/ledger (?limit tail + summary), /api/lanes (registry), /api/handoffs (GET + POST with LaneId/status validation), /api/mcp/health (fetch 7354 → STUB fallback w/ sample payload, redirect:error, 4s timeout), /api/mcp/tools (22 + denylist), /api/mcp/queue (mock coordination_status snapshot).
+    37→    37→
+    38→    38→Stage Summary:
+    39→    39→- All 7 API routes return 200 in dev.log. mcp/health degrades to STUB in sandbox (bridge unreachable) but still serves sample payload. SSRF surface reviewed: fixed env URL, no redirect following, no cookie forwarding.
+    40→    40→
+    41→    41→---
+    42→    42→Task ID: 3
+    43→    43→Agent: GLM-5.2 (main orchestrator)
+    44→    44→Task: Milestone C — UI boards (layout, components, pages)
+    45→    45→
+    46→    46→Work Log:
+    47→    47→- Added dark-ops CSS to globals.css (nexus-bg grid, nexus-panel, mono, custom scrollbar, nexus-pulse animation).
+    48→    48→- Created src/hooks/use-nexus.ts — polling fetch hook (configurable interval, abort-safe, lint-clean).
+    49→    49→- Created src/components/OpsNav.tsx — sticky top nav with active link highlighting + CDP live-truth indicator.
+    50→    50→- Created src/components/KeepVisibleBanner.tsx, QwenWebDevNote.tsx, LaneCard.tsx, HandoffCard.tsx, LedgerTail.tsx, McpHealthBadge.tsx, McpToolTable.tsx.
+    51→    51→- Updated layout.tsx — forced dark theme, OpsNav, sticky footer (mt-auto), sonner + radix toasters.
+    52→    52→- Pages: src/app/page.tsx (ops board: stats + lane grid + recent handoffs + ledger tail), src/app/mcp/page.tsx (health badge + queue + tool table), src/app/lanes/page.tsx (lane doctrine grid w/ status filter), src/app/handoffs/page.tsx (create form w/ shadcn Select/Input/Textarea + status/lane filters).
+    53→    53→
+    54→    54→Stage Summary:
+    55→    55→- All 4 pages render and poll their APIs. Home page confirmed live in dev.log (lane grid, handoffs, ledger all 200). Lint passes (fixed react-hooks/refs + set-state-in-effect rules). Handoff create form POSTs to /api/handoffs with sonner toasts.
+    56→    56→
+    57→    57→---
+    58→    58→Task ID: 4
+    59→    59→Agent: GLM-5.2 (main orchestrator)
+    60→    60→Task: Milestone D — MCP contract docs + RESUME
+    61→    61→
+    62→    62→Work Log:
+    63→    63→- Created docs/MCP_CONTRACT.md — 22-tool table (connectivity/evidence/queue/session-a2a), hardening facts, denylist, health states, SSRF checklist.
+    64→    64→- Created docs/LANE_DOCTRINE.md — 14 lanes with role/success-signal/wait-policy, critical notes (qwen preview, mimo 4h gate, zo resume, glm52 lock), Hermes VISIBLE_LANES=1 constraint.
+    65→    65→- Created docs/RESUME.md — next-session resume protocol, file map, retry protocol, integration HANDOFF block.
+    66→    66→- Updated STATE.md → "READY FOR LONG RUN".
+    67→    67→
+    68→    68→Stage Summary:
+    69→    69→- Docs complete and consistent with src/lib/mcpTools.ts + registry.ts. STATE.md marks A-D DONE, E PARTIAL (file-backed store + filter UI done; SSE note page pending). Next: Agent Browser self-verify.
+    70→    70→
+    71→    71→---
+    72→    72→Task ID: 5+6
+    73→    73→Agent: GLM-5.2 (main orchestrator)
+    74→    74→Task: Milestone E (SSE note) + Agent Browser self-verification
+    75→    75→
+    76→    76→Work Log:
+    77→    77→- Added SSE connector note section to /mcp page (documents 7354/sse stream + wiring path via agent_publish_message topic nexus.a2a.handoff).
+    78→    78→- Agent Browser verification: opened /, /mcp, /lanes, /handoffs — all render with no console errors.
+    79→    79→- Found + fixed bug: /api/mcp/health returned {} because downStub (async) was not awaited in NextResponse.json. Now returns proper STUB payload with registry_hash 0xab12cd34 + sample bridge payload.
+    80→    80→- Tested handoff create flow end-to-end: filled summary + artifacts + budget → POST /api/handoffs → 201 → card hof_mre5y357_kybow7 (token nx_7DHT) persisted to data/handoffs.json + rendered in list + propagated to home page Recent Handoffs via polling.
+    81→    81→- Tested lanes page PARTIAL filter → correctly shows 4 partial lanes (Qwen Deep, MiMo Claw, ChatGPT, Intern GPU).
+    82→    82→- Verified mobile (390px) nav scrolls horizontally; desktop (1280px) content pushes footer naturally (1889px > 800px viewport, sticky-footer layout correct).
+    83→    83→- Final lint: clean. Dev log: only harmless cross-origin + fast-refresh warnings, all API routes 200.
+    84→    84→
+    85→    85→Stage Summary:
+    86→    86→- All milestones A–E complete. STATE.md = READY FOR LONG RUN.
+    87→    87→- Agent Browser self-verify PASSED. App is interactive and runnable.
+    88→    88→
+    89→    89→---
+    90→    90→Task ID: 7
+    91→    91→Agent: GLM-5.2 (main orchestrator)
+    92→    92→Task: Git version control + GitHub backup + GPG commit signing (anti-wipe)
+    93→    93→
+    94→    94→Work Log:
+    95→    95→- Inspected existing git state: 3 prior sandbox auto-commits, no remote, placeholder identity.
+    96→    96→- Fetched GitHub identity via API: login specimba, id 32012089, name Canberk Karaerkek.
+    97→    97→- Hardened .gitignore: added /db/*.db, /.zscripts/dev.pid, /data/handoffs.json (runtime-mutated), .env.local.
+    98→    98→- Untracked runtime/binary/secret files: .env, db/custom.db, .zscripts/dev.pid, data/handoffs.json (kept on disk).
+    99→    99→- Configured git identity: name "Canberk 'specimba' Karaerkek", email 32012089+specimba@users.noreply.github.com (noreply, links to specimba account).
+   100→   100→- Set up credential store: token written to ~/.git-credentials (mode 600, OUTSIDE repo, never tracked); git config --global credential.helper store; remote URL is clean (no embedded token).
+   101→   101→- Added remote origin → specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror.git.
+   102→   102→- Resolved unrelated-histories divergence: merged origin/main (had .gitignore/LICENSE/README) with -X ours → kept NEXUS README/.gitignore, added LICENSE.
+   103→   103→- Pushed all NEXUS work (87 tracked files) to GitHub main. Verified remote tree contains src/lib/*, docs/*, data/sample_*.
+   104→   104→- Created scripts/git-backup.sh: idempotent commit + pull(merge) + push. Tested no-op case.
+   105→   105→- GPG commit signing: generated ed25519 signing key (no passphrase, headless-safe, ~/.gnupg/gpg.conf pinentry-mode loopback). Key ID 8D8015A4E4C4AF93, fingerprint C9F613A0F088BE4E5CD8FDD48D8015A4E4C4AF93. Uploaded to GitHub via API (gpg key id 5177423). Configured git user.signingkey + commit.gpgsign=true + gpg.program=/usr/bin/gpg.
+   106→   106→- Tested signed commit: "Good signature" verified locally; GitHub API reports "verified": true.
+   107→   107→- Created docs/GIT_BACKUP.md documenting remote, auth, identity, signing, gitignore policy, backup workflow, wipe-recovery.
+   108→   108→- Updated STATE.md with git-backup section.
+   109→   109→
+   110→   110→Stage Summary:
+   111→   111→- Full anti-wipe backup operational: every commit is GPG-signed (Verified on GitHub) + pushed to specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror main.
+   112→   112→- Token stays in ~/.git-credentials (never tracked). Runtime state gitignored. Fresh clones start clean from sample seed.
+   113→   113→- Recovery path documented in docs/GIT_BACKUP.md + docs/RESUME.md.
+   114→   114→- NOTE: ssh-keygen unavailable in sandbox (no sudo); used GPG signing instead of SSH signing. GPG works headlessly via pinentry-mode loopback + no-passphrase key.
+   115→   115→
+   116→   116→---
+   117→   117→Task ID: ARCH-1
+   118→   118→Agent: Architecture & Systems Design
+   119→   119→Task: Analyze NEXUS OS architecture from extracted 3-part ZIP source
+   120→   120→
+   121→   121→Work Log:
+   122→   122→- Read strategic docs: NEXUS_OS_STATUS_REPORT.md (787 lines, full), nexus_os/CANONICAL_STRUCTURE.txt, SOUL.md, 01_PROJECT_STATE.md, HEARTBEAT.md, worklog.md (source-tree copy).
+   123→   123→- Read bridge layer: nexus_os/bridge/{server.py (681L), sdk.py (465L), secrets.py (321L), mcpaauth.py (256L)}.
+   124→   124→- Read engine layer: nexus_os/engine/{executor.py, router.py, hermes.py, forge.py, skillsmith.py}.
+   125→   125→- Read team/coordinator.py (1085L — first 600 lines), package.json, Caddyfile (port 81 reverse proxy with dynamic port redirect).
+   126→   126→- Read fusion-pack/: NEXUS_FUSION_PACK.md, API_CONTRACTS.md, WIRED_VS_MOCKED.json. Cross-checked sibling glm5-fusion/ pack (PACK_MANIFEST.md).
+   127→   127→- Spot-checked supporting modules: governor/{base.py, trust_engine_v2.py}, vault/manager.py, swarm/foreman.py, gmr/rotator.py, db/manager.py, cron/agent_cycle.py, nexus-scan.py.
+   128→   128→
+   129→   129→Key Findings:
+   130→   130→- Bridge = JSON-RPC 2.0 over HTTP, HMAC-SHA256 auth (SecretStore), KAIJU 4-var authz, FastAPI mount via create_app(). Methods: tasks/submit, tasks/status, vault/read, vault/write, a2a/agent-card.
+   131→   131→- Two parallel auth systems declared but only one live: bridge/server.py uses SecretStore (HMAC); bridge/mcpaauth.py declares RBAC + API keys + rate-limit fields but is NOT wired into server.py. Rate-limit field in APIKey is declared, never enforced.
+   132→   132→- BridgeServer vault/read and vault/write handlers are stubs (return empty records / fake record_id) — VaultManager is NOT wired into the bridge.
+   133→   133→- AsyncBridgeExecutor.execute() returns "not implemented" (TODO at executor.py:117). Only MockExecutor + SyncCallbackExecutor actually run.
+   134→   134→- EngineRouter implements DFS-based DAG cycle detection for task dependencies. SQLite-backed.
+   135→   135→- HermesRouter has TWO ModelProfile classes (one in hermes.py, one in gmr/rotator.py) — both with flexible __getattr__ for V2/V3 legacy compat. Migration incomplete.
+   136→   136→- SkillSmith (skillsmith.py) is a compat shim over skill_smith.py (canonical). Auto-forges skills after 3+ executions at >=0.85 success rate, using first-2-words prompt prefix as regex pattern.
+   137→   137→- Forge = Qualixar-inspired YAML declarative team design (team + agents + workflow). TeamSpec.validate() checks role refs + sequential steps.
+   138→   138→- TeamCoordinator dispatches via .task.md files to OpenClaw worker queues (~/.openclaw/agents/{worker}/tasks/{pending,done,failed}/). Two default workers: glm5-worker-1 (code/analysis/reasoning), glm5-worker-2 (code/operations/security).
+   139→   139→- Frontend/Backend split: Next.js dashboard (port 3000) talks DIRECTLY to Prisma/SQLite (12 models), bypassing the Python backend. Python governance API (port 7352 per state doc) is NOT wired to dashboard — listed as P0 blocker.
+   140→   140→- fusion-pack/ is a documentation/audit pack (not code). Sibling glm5-fusion/ is the team-published variant with screenshots. Both map every component to backend contract + wired-vs-mocked status. Biggest gap documented: Overview Tab ignores real /api/system endpoint.
+   141→   141→- DB strategy: SQLite via Prisma (frontend) + sqlite3 via DatabaseManager v3 (Python). Both can use SQLCipher for encryption. threading.local() per-thread connections (fixes FastAPI crash). WAL mode + NORMAL sync.
+   142→   142→- 7-agent roster: SPECI (architect, branch protect), CODEX (bridge/db/scripts), NEO (vault/OPUSman), GLM5.1 (dashboard wiring), OSMAN (audit), GROK420 (false-completion detection), OPENcode (swarm/OpenClaw). Workspace model: main PROTECTED + per-agent experimental branches (.codex/, .openclaw/, .pi/, .research/).
+   143→   143→
+   144→   144→Stage Summary:
+   145→   145→
+   146→   146→A. SYSTEM TOPOLOGY
+   147→   147→==================
+   148→   148→
+   149→   149→The NEXUS OS stack is a 4-process topology behind a reverse proxy:
+   150→   150→
+   151→   151→| Process | Port | Tech | Role |
+   152→   152→|---|---|---|---|
+   153→   153→| Next.js Dashboard | 3000 | Next.js 16.1.3 + React 19 + Prisma + SQLite | Frontend + 19 API routes |
+   154→   154→| Swarm WebSocket | 3003 | Socket.io mini-service (mini-services/swarm-ws/index.ts) | Real-time swarm event push (5 channels, 3-8s intervals) |
+   155→   155→| Python Governance API | 7352 (target) / 8000 (default in code) | FastAPI via bridge/server.py::create_app() | Canonical governance brain (JSON-RPC 2.0) |
+   156→   156→| TWAVE wrapper | 7353 | HTTP | Low-VRAM execution wrapper (HOLD status) |
+   157→   157→| Ollama | 11434 | HTTP | Local model inference (internal only) |
+   158→   158→| Caddy | 81 | Reverse proxy | Routes via XTransformPort query param or default to :3000 |
+   159→   159→
+   160→   160→CRITICAL ARCHITECTURAL SPLIT: The Next.js dashboard does NOT call the Python governance API. It calls Prisma/SQLite directly via /api/* route handlers. The Python nexus_os/ package exists in parallel as the canonical governance brain but is unwired — listed as P0 blocker #2 in 01_PROJECT_STATE.md ("Dashboard/relay still needs real governance API wiring"). This means there are effectively TWO governance implementations (TypeScript /api/governor/route.ts + Python nexus_os/governor/) and TWO SQLite stores (Prisma-managed + Python-managed) with no synchronization.
+   161→   161→
+   162→   162→The bridge layer (nexus_os/bridge/) is the Python-side ingress: a JSON-RPC 2.0 server with HMAC-SHA256 auth + KAIJU 4-variable authz + TaskExecutor dispatch. It is designed to be the A2A protocol boundary for external agents. Currently the bridge is reachable in tests but the production dashboard bypasses it entirely.
+   163→   163→
+   164→   164→B. 8-PILLAR ARCHITECTURE -> PYTHON MODULES
+   165→   165→==========================================
+   166→   166→
+   167→   167→| Pillar | Python Package | Key Modules | Implementation Status |
+   168→   168→|---|---|---|---|
+   169→   169→| Bridge | nexus_os/bridge/ | server.py (JSON-RPC FastAPI), sdk.py (NexusClient + CircuitBreaker + RetryPolicy), secrets.py (SecretStore + per-provider API key pools), mcpaauth.py (MCPAuth RBAC, NOT wired), vault.py (referenced) | Auth/routing scaffolding complete; vault/read+write handlers are STUBS; AsyncBridgeExecutor TODO |
+   170→   170→| Engine | nexus_os/engine/ | executor.py (TaskExecutor + 3 backends), router.py (DAG w/ cycle detection), hermes.py (intent+experience routing w/ GMR), forge.py (YAML team design), skillsmith.py (compat shim), skill_smith.py (canonical), skill_adapter.py, tool_discipline.py, hermes_experience.py, heartbeat.py | Real Executor v2 with pluggable backends; Bayesian-smoothed experience scoring; cost-aware model selection |
+   171→   171→| Governor | nexus_os/governor/ | base.py (NexusGovernor), trust_engine_v2.py (HARDWALL + 6-stage CDR), trust_scoring.py, compliance.py, kaiju_auth.py (4-var authz), proof_chain.py (VAP), autoharness.py | TrustEngine v2.2 operational; logistic scaling + non-compensatory CRITICAL + adaptive temporal decay |
+   172→   172→| Vault | nexus_os/vault/ | manager.py (5-track: event/trust/capability/failure_pattern/governance), memory.py, memory_tracks.py, memory_adapter.py (Mem0), trust.py, trust_store.py, cache.py, decay_worker.py, poisoning.py | Canonical 5-track schema verified; hash-chained entries; SQLCipher hard-fail encryption |
+   173→   173→| GMR | nexus_os/gmr/ | rotator.py (GeniusModelRotator dual-pool FAST/PREMIUM), scheduler.py, circuit_breaker.py, savings.py, domain_mapping.py, telemetry.py, trust_adapter.py, context_packet.py | Dual-pool zero-context-loss rotator; intent classifier with 6 categories |
+   174→   174→| Swarm | nexus_os/swarm/ | foreman.py (Worker pool + 15min heartbeat), worker.py, auction.py (task bidding), openclaw_spawner.py | v3.1: process() distributes tasks to ALL idle workers concurrently |
+   175→   175→| Monitor | nexus_os/monitoring/ + nexus_os/observability/ | token_guard.py (TokenGuard + quick_track), counters.py, strategies.py, trust_scorer.py; tracing.py, squeez.py (log compression) | TokenGuard integrated into BridgeServer (budget gate + tracking headers) |
+   176→   176→| Config | (implicit) | No dedicated package — config via SystemConfig DB table + env vars + SecretStore JSON file + HEARTBEAT.md moveable strategy | Distributed across packages; no single config service |
+   177→   177→
+   178→   178→C. MULTI-AGENT TEAM STRUCTURE
+   179→   179→==============================
+   180→   180→
+   181→   181→7-AGENT ROSTER (v3.2 aligned, per STATUS_REPORT section 2.1):
+   182→   182→
+   183→   183→| Team | Agent | Role | Owns |
+   184→   184→|---|---|---|---|
+   185→   185→| SPECI | speci (human) | Architecture, branch protection, Phase 0 gate | All canonical paths (READ+WRITE main) |
+   186→   186→| CODEX | CODEX | Port standardization, pre-commit hooks, benchmarks | nexus_os/bridge/, nexus_os/db/, scripts/ |
+   187→   187→| NEO | NEO | OPUSman v6.2 integration, Vault/5-track wiring | nexus_os/governor/, nexus_os/vault/ |
+   188→   188→| GLM5.1 | GLM | Dashboard wiring to real NEXUS API data | src/components/nexus/tabs/, src/app/api/ |
+   189→   189→| OSMAN | Qwen3.6 | Architectural audit, Phase 0 blockers | Review only |
+   190→   190→| GROK420 | Grok 4.3 | Task verification, false-completion detection | tasks/pending/, tasks/done/ |
+   191→   191→| OPENcode | OPENcode | OpenClaw spawner, swarm management | nexus_os/swarm/openclaw_spawner.py |
+   192→   192→
+   193→   193→WORKSPACE/BRANCH MODEL (per CANONICAL_STRUCTURE.txt):
+   194→   194→- main <- CANONICAL, SPECI-only (PROTECTED)
+   195→   195→- codex/specimba/* <- CODEX experimental (merged)
+   196→   196→- codex/experimental <- CODEX new experiments
+   197→   197→- openclaw/experimental, pi/experimental, research/experimental <- per-team branches
+   198→   198→- All agents READ from src/nexus_os/ (READ-ONLY for non-SPECI agents)
+   199→   199→- All agents WRITE to own workspace (.codex/, .openclaw/, .pi/, research/)
+   200→   200→- Commit to own experimental branch -> PR -> SPECI reviews -> merge to main
+   201→   201→- Git workflow: COMMIT after feature/bugfix/test/doc; TAG v3.0.0-beta current
+   202→   202→
+   203→   203→AGENT INTERACTION MODEL:
+   204→   204→- TeamCoordinator (team/coordinator.py) is the central dispatch hub
+   205→   205→- dispatch() pipeline: (1) query mem0 for past experience -> (2) classify via Hermes (domain+complexity) -> (3) check skill registry for fast-path -> (4) select worker by availability+ability -> (5) write .task.md to worker's pending queue -> (6) monitor for completion -> (7) record outcome to Hermes + mem0
+   206→   206→- Default workers: glm5-worker-1 (code/analysis/reasoning), glm5-worker-2 (code/operations/security)
+   207→   207→- File-driven coordination: tasks live in ~/.openclaw/agents/{worker}/tasks/{pending,done,failed}/*.task.md — NOT in prompts. Token-efficient.
+   208→   208→- Trust scoring: worker.trust_score *= 0.9 + 0.1 on success; *= 0.8 on failure (incremental decay toward 1.0 / 0.0)
+   209→   209→- Stalled-task detection: STALL_THRESHOLD = 10 minutes
+   210→   210→- SOUL.md constraint: cloud agent CANNOT use local GPUs — must delegate to Local Agent via .task.md files in handoff/to_local/, using Git as the communication bus (no direct localhost connections)
+   211→   211→
+   212→   212→D. MCP INTEGRATION ARCHITECTURE
+   213→   213→================================
+   214→   214→
+   215→   215→The MCP (Model Context Protocol) access layer is defined across three files:
+   216→   216→
+   217→   217→1. bridge/mcpaauth.py — RBAC + API key authentication
+   218→   218→   - 4 roles: ADMIN / OPERATOR / READONLY / GUEST
+   219→   219→   - 6 AuthResults: OK / INVALID_KEY / EXPIRED / RATE_LIMITED / FORBIDDEN / NOT_FOUND
+   220→   220→   - APIKey dataclass: key_id, key_value, role, agent_id, created_at, expires_at, rate_limit (declared but UNUSED), request_count
+   221→   221→   - Permission map (method-based): tasks/submit->tasks:write, tasks/status->tasks:read, vault/write->vault:write, vault/read->vault:read, a2a/agent-card->a2a:read
+   222→   222→   - Role permissions (with wildcard support): ADMIN={*}, OPERATOR={tasks:*, vault:*, a2a:*}, READONLY={tasks:read, vault:read, status:*}, GUEST={status:read}
+   223→   223→   - 3 default keys hardcoded: admin-001, operator-001, readonly-001
+   224→   224→   - Singleton via get_mcp_auth() with double-checked locking (threading.Lock)
+   225→   225→   - GAP: rate_limit field is declared but authenticate() never enforces it
+   226→   226→   - GAP: mcpaauth.py is NOT imported by bridge/server.py — two parallel auth systems exist
+   227→   227→
+   228→   228→2. bridge/server.py — JSON-RPC 2.0 governance server
+   229→   229→   - BridgeServer wraps FastAPI via create_app()
+   230→   230→   - 5 methods: tasks/submit, tasks/status, vault/read, vault/write, a2a/agent-card (A2A v1.1)
+   231→   231→   - Endpoints: POST /tasks/submit, POST /tasks/status, POST /vault/read, POST /vault/write, POST / (JSON-RPC router), GET /health
+   232→   232→   - Auth: HMAC-SHA256 signature via X-Nexus-Signature header (uses SecretStore, NOT MCPAuth API keys)
+   233→   233→   - Authz: KAIJU 4-variable (scope x clearance, impact x clearance, intent x action) via NexusGovernor.check_access()
+   234→   234→   - Token guard: pre-check 1000-token budget -> 429 if exceeded; tracks input/output tokens via TokenGuard; non-blocking on failure
+   235→   235→   - JSON-RPC errors: -32700 ParseError, -32600 Method Not Allowed, -32601 Unknown Method, -32602 Invalid Params, -32603 Internal Error; HeldError -> HTTP 202 with hold_ticket
+   236→   236→   - Response envelope: {jsonrpc: "2.0", result, trace_id, x-nexus-input-tokens, x-nexus-output-tokens}
+   237→   237→
+   238→   238→3. bridge/sdk.py — NexusClient client SDK
+   239→   239→   - HMAC-SHA256 request signing: signature = HMAC-SHA256(secret, "{secret}:{trace_id}:{payload}")
+   240→   240→   - X-Nexus-* headers: Agent-ID, Project-ID, Trace-ID, Signature, Lineage-ID (optional)
+   241→   241→   - RetryPolicy: max_retries=3, base_delay=1.0s, max_delay=30s, backoff_factor=2.0, retryable_codes=[429, 500, 502, 503, 504]
+   242→   242→   - CircuitBreaker: states CLOSED/OPEN/HALF_OPEN, failure_threshold=5, recovery_timeout=60s, thread-safe via threading.Lock
+   243→   243→   - Public API: submit_task, query_status, read_memory, write_memory
+   244→   244→   - Uses urllib (not aiohttp) — sync-only by default; async mentioned as optional in docstring
+   245→   245→
+   246→   246→HOW AN EXTERNAL MCP SYSTEM WOULD CONNECT:
+   247→   247→1. Acquire an agent_id + secret from SecretStore (env var NEXUS_SECRET_{AGENT_ID} or secrets.json file or master-key derivation)
+   248→   248→2. Register an API key with MCPAuth.register_key() — currently optional since server.py doesn't enforce it
+   249→   249→3. POST to http://bridge-host:7352/ with body {"method": "tasks/submit", "description": "...", "context": {...}, "kaiju": {scope, intent, impact, clearance}}
+   250→   250→4. Headers required: X-Nexus-Agent-ID, X-Nexus-Project-ID, X-Nexus-Trace-ID, X-Nexus-Signature, Content-Type: application/json
+   251→   251→5. Response: JSON-RPC 2.0 envelope with task_id + status + token_usage
+   252→   252→
+   253→   253→A2A v1.1: query via POST / with method="a2a/agent-card" returns AgentCard with capabilities, trust_band, negotiation_policies, status. NOTE: current _exec_agent_card() returns HARDCODED capabilities (code_generation, swarm_orchestration, governance_audit, memory_query, skill_discovery) — the docstring says "In production, this queries the Vault/Governor for dynamic, verified capabilities" but that wiring is not implemented.
+   254→   254→
+   255→   255→E. KEY ARCHITECTURAL PATTERNS
+   256→   256→==============================
+   257→   257→
+   258→   258→1. DEPENDENCY INJECTION — All major subsystems accept their dependencies as constructor params:
+   259→   259→   - BridgeServer(secret_store, governor, executor, token_guard)
+   260→   260→   - TaskExecutor(db_manager, backend, trust_scorer, max_workers)
+   261→   261→   - NexusGovernor(db, kaiju, compliance_engine, enable_cva, token_guard)
+   262→   262→   - TeamCoordinator(project_root, db, openclaw_base)
+   263→   263→   Defaults provided for optional deps, enabling standalone usage.
+   264→   264→
+   265→   265→2. STRATEGY / PLUGGABLE BACKENDS — ExecutorBackend ABC with 3 implementations:
+   266→   266→   - SyncCallbackExecutor (in-process Python callables, registered by task_type)
+   267→   267→   - AsyncBridgeExecutor (REMOTE via Bridge — TODO, returns "not implemented")
+   268→   268→   - MockExecutor (configurable delay + failure_rate, for testing)
+   269→   269→   TaskExecutor.set_backend() allows runtime swap.
+   270→   270→
+   271→   271→3. SINGLETON PATTERN — get_mcp_auth() in mcpaauth.py uses double-checked locking with threading.Lock() (lines 240-247).
+   272→   272→
+   273→   273→4. THREAD SAFETY — Comprehensive:
+   274→   274→   - CircuitBreaker: threading.Lock() around state mutations
+   275→   275→   - Foreman: threading.Lock() around worker registry
+   276→   276→   - MCPAuth: threading.RLock() around key registry
+   277→   277→   - DatabaseManager v3: threading.local() for per-thread SQLite connections (fixes FastAPI crash)
+   278→   278→   - VaultManager: threading.local() for per-thread connections
+   279→   279→   - TaskExecutor: ThreadPoolExecutor(max_workers=4) for parallel task execution
+   280→   280→   - All SQLite connections use check_same_thread=False + WAL journal mode + NORMAL synchronous
+   281→   281→
+   282→   282→5. FORGE — DECLARATIVE TEAM DESIGN (Qualixar-inspired, arXiv:2604.06392):
+   283→   283→   - ForgeLoader.load_file(path) / load_string(yaml) -> TeamSpec
+   284→   284→   - TeamSpec: team_name + List[AgentSpec] + List[WorkflowStep] + metadata
+   285→   285→   - AgentSpec: role, model, traits, clearance, agent_id (resolved at runtime)
+   286→   286→   - WorkflowStep: step_number, agent_role, action, output_to (next|result), input_from (previous|step#)
+   287→   287→   - TeamSpec.validate() checks: role references valid, steps sequential, >=1 agent, >=1 step
+   288→   288→   - WorkflowStep.build_context() threads previous step results into next step's context
+   289→   289→   - Usage: for step in team.workflow: result = engine.execute(...); step.set_result(result)
+   290→   290→
+   291→   291→6. SKILL AUTO-DISCOVERY (SkillSmith):
+   292→   292→   - skillsmith.py is a COMPAT SHIM — canonical impl lives in skill_smith.py
+   293→   293→   - Auto-forges SkillRecord after min_executions (default 3) tasks with success_rate >= success_threshold (default 0.85)
+   294→   294→   - Pattern extraction: takes first 2 words of prompt -> ^{word1} {word2}.* regex
+   295→   295→   - HermesRouter.route() checks skills first as fast-path (bypasses GMR selection if matched_skill found)
+   296→   296→   - SkillRecord stored in skill_registry dict + _task_history tracks per-(task_type, model) success history
+   297→   297→
+   298→   298→7. BAYESIAN SMOOTHING (ExperienceScorer):
+   299→   299→   - PRIOR_SUCCESS=10, PRIOR_FAILURE=2 prevent small-sample overfitting
+   300→   300→   - score = (PRIOR_SUCCESS + successes) / (PRIOR_SUCCESS + successes + PRIOR_FAILURE + failures)
+   301→   301→   - Falls back to model.quality_score (default 0.5) when no DB data
+   302→   302→   - record_outcome() upserts into model_performance table (model_id, task_class, success_count, failure_count, total_latency_ms)
+   303→   303→
+   304→   304→8. COST-AWARE MODEL SELECTION (CostOptimizer):
+   305→   305→   - Trivial/Standard complexity -> cost-optimized (cheapest above quality_threshold=0.5)
+   306→   306→   - Critical complexity -> prefer local models if available above threshold, else quality-first
+   307→   307→   - Default -> highest score
+   308→   308→   - Fallback: if no candidates above threshold, use highest-score model with "below threshold" reason
+   309→   309→
+   310→   310→9. DAG-BASED TASK ROUTING (EngineRouter):
+   311→   311→   - Tasks table: task_id, project_id, description, status, priority, context (JSON), heartbeat, timestamps
+   312→   312→   - task_dependencies table: parent_task_id -> child_task_id
+   313→   313→   - get_ready_tasks(): tasks with no deps OR all parent deps completed, ordered by priority DESC + created_at ASC
+   314→   314→   - DFS-based cycle detection (_would_create_cycle) before adding dependencies — raises ValueError on cycle
+   315→   315→   - Self-loop detection: parent_task_id == child_task_id rejected
+   316→   316→   - Status states: PENDING, IN_PROGRESS, COMPLETED, FAILED, BLOCKED, CANCELLED
+   317→   317→
+   318→   318→10. GRACEFUL DEGRADATION:
+   319→   319→    - TeamCoordinator uses try/except ImportError for Mem0Adapter and SkillRegistry — falls back to Hermes-only routing
+   320→   320→    - SecretStore lookup chain: in-memory overrides -> file secrets -> env vars -> master-key HMAC derivation -> SecretNotFoundError
+   321→   321→    - TokenGuard tracking in BridgeServer is non-blocking: failures logged but never break requests
+   322→   322→    - Vault read/write in BridgeServer return stubs (empty records / fake record_id) rather than 500
+   323→   323→
+   324→   324→11. HARD-FAIL ENCRYPTION (db/manager.py v3):
+   325→   325→    - EncryptedAdapter raises ImportError if pysqlcipher3 not installed
+   326→   326→    - No silent fallback to plaintext unless allow_unencrypted=True explicitly passed
+   327→   327→    - Production stance: encryption is mandatory; dev mode opts in to plaintext
+   328→   328→
+   329→   329→F. WHERE FUSION BELONGS
+   330→   330→========================
+   331→   331→
+   332→   332→The fusion-pack is a DOCUMENTATION/AUDIT pack, NOT a code layer and NOT a parallel implementation.
+   333→   333→
+   334→   334→Two fusion packs exist in the extracted dashboard-pack:
+   335→   335→1. nexus-os-source/fusion-pack/ — INSIDE the source ZIP, alongside the code:
+   336→   336→   - NEXUS_FUSION_PACK.md (350 lines): intake checklist, UI structure, strongest screens tier ranking, wired-vs-mocked map, API assumptions, differentiators, public-safe vs mock-dependent classification, known issues
+   337→   337→   - API_CONTRACTS.md (208 lines): full request/response schemas for all 17 API routes
+   338→   338→   - WIRED_VS_MOCKED.json (193 lines): machine-readable status map (14 components x {status, data_source, mutations_persist, backend_contract, public_safe, issues})
+   339→   339→2. glm5-fusion/ — OUTSIDE the source ZIP (sibling directory at dashboard-pack/glm5-fusion/):
+   340→   340→   - PACK_MANIFEST.md, UI_STRUCTURE.md, SCREEN_STRENGTHS.md, FUSION_RECOMMENDATIONS.md, API_ASSUMPTIONS.md, WIRED_VS_MOCKED.md
+   341→   341→   - + screenshots/ directory with 8 PNG screenshots (00_overview, 01_governor, 02_research, 04_vault, 05_stresslab, 06_gmr, 07_tokens)
+   342→   342→
+   343→   343→RELATIONSHIP: Both packs document the SAME v3.1 dashboard state from different angles. The in-source fusion-pack/ is the canonical structured assessment (with machine-readable JSON); the glm5-fusion/ is the GLM5 team-published snapshot (with screenshots) for handoff/review purposes.
+   344→   344→
+   345→   345→ROLE: Fusion is a layer of METADATA about the source, not a code layer. It maps every UI component to its backend contract and identifies the biggest gap (Overview Tab ignores /api/system — entirely simulated). It is the due-diligence audit that should drive the next milestone: wiring the dashboard to the Python governance API.
+   346→   346→
+   347→   347→G. ARCHITECTURE RISKS
+   348→   348→=====================
+   349→   349→
+   350→   350→1. PYTHON+TYPESCRIPT SPLIT (HIGHEST RISK):
+   351→   351→   - Two languages, two runtimes, two type systems
+   352→   352→   - Dashboard (Next.js) talks DIRECTLY to Prisma/SQLite — bypasses Python governance brain
+   353→   353→   - Python backend (FastAPI on 7352) is canonical per SOUL.md but UNWIRED to dashboard
+   354→   354→   - Effectively TWO governance implementations: TypeScript /api/governor/route.ts + Python nexus_os/governor/
+   355→   355→   - Effectively TWO SQLite stores: Prisma-managed (12 models) + Python-managed (DatabaseManager v3)
+   356→   356→   - HIGH RISK of drift, data inconsistency, duplicated business logic, divergent auth models
+   357→   357→   - Listed as P0 blocker #2 in 01_PROJECT_STATE.md
+   358→   358→
+   359→   359→2. SINGLE POINTS OF FAILURE:
+   360→   360→   - SPECI is the only human who can merge to main — entire team's git workflow bottlenecks on one person
+   361→   361→   - BridgeServer holds _task_results in-memory (Dict[str, Any]) — process restart loses all task state
+   362→   362→   - No HA clustering, no replica, no failover for any service
+   363→   363→
+   364→   364→3. SQLITE CHOICE:
+   365→   365→   - Good: zero-config, file-based, encryption via SQLCipher, perfect for single-instance governance OS
+   366→   366→   - Bad: writer is single-threaded, no read replicas, no clustering, won't scale beyond one node
+   367→   367→   - threading.local() + check_same_thread=False is a workaround, not a real connection pool
+   368→   368→   - WAL mode helps read concurrency but doesn't solve write contention
+   369→   369→   - Two SQLite databases (Prisma + Python) risk schema drift
+   370→   370→
+   371→   371→4. AUTH MODEL GAP (MCP INTEGRATION):
+   372→   372→   - mcpaauth.py declares RBAC + API keys + rate limiting but is NOT wired into bridge/server.py
+   373→   373→   - server.py uses only HMAC-SHA256 SecretStore auth — no role checks, no rate limiting
+   374→   374→   - APIKey.rate_limit field is declared but never enforced in authenticate()
+   375→   375→   - Two parallel auth systems will confuse external MCP integrators
+   376→   376→
+   377→   377→5. STUB IMPLEMENTATIONS PRESENT:
+   378→   378→   - BridgeServer._exec_vault_read returns empty records (line 564)
+   379→   379→   - BridgeServer._exec_vault_write returns fake record_id without touching VaultManager (line 567)
+   380→   380→   - AsyncBridgeExecutor.execute returns "not implemented" (executor.py:117)
+   381→   381→   - _exec_agent_card returns hardcoded capabilities, not dynamic Vault/Governor query (server.py:520-532)
+   382→   382→   - get_agent_card defined TWICE in server.py (lines 282 and 293) — dead code / merge artifact
+   383→   383→
+   384→   384→6. PORT INCONSISTENCY:
+   385→   385→   - 01_PROJECT_STATE.md: governance API on 7352
+   386→   386→   - bridge/server.py: defaults to FastAPI's 8000
+   387→   387→   - STATUS_REPORT: 7352 vs 7353 confusion flagged as TASK-007
+   388→   388→   - Caddyfile uses port 81 with XTransformPort query param to redirect to arbitrary ports — flexible but unconventional; bypasses standard reverse proxy config; potential SSRF surface if XTransformPort is attacker-controllable
+   389→   389→
+   390→   390→7. TOKEN ESTIMATION IS ROUGH:
+   391→   391→   - input_tokens = len(body) // 4 (char-count heuristic)
+   392→   392→   - output_tokens = len(str(response).encode()) // 4
+   393→   393→   - Will drift from provider billing; not suitable for cost accounting
+   394→   394→
+   395→   395→8. DUPLICATE ModelProfile:
+   396→   396→   - hermes.py defines ModelProfile (lines 429-449)
+   397→   397→   - gmr/rotator.py ALSO defines ModelProfile (lines 30-55)
+   398→   398→   - Both use flexible __getattr__ for V2/V3 legacy compat
+   399→   399→   - Code smell: V2->V3 migration incomplete; risk of behavior divergence depending on which ModelProfile is imported
+   400→   400→
+   401→   401→9. WORKFLOW DELEGATION VIA GIT (HIGH LATENCY):
+   402→   402→   - SOUL.md mandates "No direct localhost connections — use Git as the communication bus"
+   403→   403→   - Cloud agent writes .task.md to handoff/to_local/, pushes; local agent pulls, executes, pushes back
+   404→   404→   - Round-trip latency in minutes, not milliseconds — unsuitable for real-time control
+   405→   405→   - File-driven dispatch (TeamCoordinator) is brittle: no acknowledgment, no retry, no idempotency guarantees
+   406→   406→   - If local agent is offline, tasks pile up indefinitely with no escalation
+   407→   407→
+   408→   408→10. TEST SUITE DRIFT:
+   409→   409→    - 586 tests collected, 2 collection errors (trust_scoring, token_guard import path issues)
+   410→   410→    - COLDSTART_BOOT.txt shows 635->622 test count drift (per STATUS_REPORT section 8.3)
+   411→   411→    - 1919 DoppelGround gitleaks unresolved (per STATUS_REPORT section 8.3)
+   412→   412→    - Phase 0 not yet closed; 8 blockers listed
+   413→   413→
+   414→   414→11. SECRET ROTATION PARTIAL:
+   415→   415→    - SecretStore.rotate_api_key() rotates within a pool (round-robin)
+   416→   416→    - No time-based rotation, no leak detection, no automated revocation on compromise
+   417→   417→    - Master-key derivation is HMAC-SHA256 — fast but no per-agent salt; vulnerable if master key leaks
+   418→   418→
+   419→   419→12. NO REAL EXTERNAL MCP INTEGRATION YET:
+   420→   420→    - A2A v1.1 agent-card endpoint exists but returns hardcoded capabilities
+   421→   421→    - No external MCP client has been demonstrated against the bridge
+   422→   422→    - The bridge is technically reachable but production traffic is zero (dashboard bypasses it)
+   423→   423→
+   424→   424→RECOMMENDED NEXT ACTIONS (priority order):
+   425→   425→1. Wire dashboard /api/* routes to Python governance API on 7352 (closes P0 blocker #2)
+   426→   426→2. Consolidate auth: wire mcpaauth.py into bridge/server.py OR remove it (eliminate dual-auth confusion)
+   427→   427→3. Implement AsyncBridgeExecutor.execute() (currently TODO) — needed for Milestone 4+
+   428→   428→4. Wire BridgeServer._exec_vault_read/write to VaultManager.store_track/retrieve_track
+   429→   429→5. Standardize port: pick 7352 (per state doc) everywhere; update Caddyfile + bridge defaults
+   430→   430→6. Consolidate ModelProfile — single canonical class in gmr/rotator.py, import from hermes.py
+   431→   431→7. Replace char-count token estimation with real tokenizer (tiktoken or provider-native)
+   432→   432→8. Add rate-limit enforcement to MCPAuth.authenticate() (field exists, logic missing)
+   433→   433→9. Resolve DoppelGround gitleaks before any public repo flip (P0 blocker #1)
+   434→   434→10. Add integration tests that exercise the bridge end-to-end with a real NexusClient
+   435→   435→

@@ -1,0 +1,252 @@
+   420→    - A2A v1.1 agent-card endpoint exists but returns hardcoded capabilities
+   421→    - No external MCP client has been demonstrated against the bridge
+   422→    - The bridge is technically reachable but production traffic is zero (dashboard bypasses it)
+   423→
+   424→RECOMMENDED NEXT ACTIONS (priority order):
+   425→1. Wire dashboard /api/* routes to Python governance API on 7352 (closes P0 blocker #2)
+   426→2. Consolidate auth: wire mcpaauth.py into bridge/server.py OR remove it (eliminate dual-auth confusion)
+   427→3. Implement AsyncBridgeExecutor.execute() (currently TODO) — needed for Milestone 4+
+   428→4. Wire BridgeServer._exec_vault_read/write to VaultManager.store_track/retrieve_track
+   429→5. Standardize port: pick 7352 (per state doc) everywhere; update Caddyfile + bridge defaults
+   430→6. Consolidate ModelProfile — single canonical class in gmr/rotator.py, import from hermes.py
+   431→7. Replace char-count token estimation with real tokenizer (tiktoken or provider-native)
+   432→8. Add rate-limit enforcement to MCPAuth.authenticate() (field exists, logic missing)
+   433→9. Resolve DoppelGround gitleaks before any public repo flip (P0 blocker #1)
+   434→10. Add integration tests that exercise the bridge end-to-end with a real NexusClient
+   435→
+   436→---
+   437→Task ID: DATA-1
+   438→Agent: Data Modeling & Metrics
+   439→Task: Audit Prisma schema, API routes, trust engine, vault, token monitoring, GMR, and metrics gaps for NEXUS OS dashboard
+   440→
+   441→Work Log:
+   442→- Read prior ARCH-1 section (worklog.md lines 116-434) for context on dual-stack architecture.
+   443→- Read prisma/schema.prisma (203L, 12 models) — full schema audit.
+   444→- Listed src/app/api/ — found 15 route files (route.ts, proxy/route.ts, ai-bridge/route.ts, ai-bridge/providers/route.ts, rate-limit/status/route.ts + 10 top-level).
+   445→- Read all 16 API route handlers (system, governor, vault, swarm, models, stresslab, research, tokens, trust-engine, rate-limit/status, seed, settings, agents, ai-bridge, ai-bridge/providers, chat, proxy, root).
+   446→- Read nexus_os/governor/trust_engine_v2.py (548L — TrustEngineV2 + DangerLevel + CDRStage).
+   447→- Read nexus_os/governor/trust_scoring.py (259L — compute_score + LaneParams + MemoryTracks in-process).
+   448→- Read nexus_os/vault/manager.py (86L — VaultManager SQLite store).
+   449→- Read nexus_os/vault/memory_tracks.py (426L — 5-track MemoryTracker + CapabilityProfile + FailurePattern).
+   450→- Read nexus_os/monitoring/token_guard.py (599L — TokenGuard + AuditEntry + semantic cache + model routing).
+   451→- Read nexus_os/monitoring/strategies.py (63L — hot_path/warm_path decorators + SemanticCache). NOTE: counters.py NOT FOUND in extracted source — gap.
+   452→- Read nexus_os/gmr/rotator.py (463L — GeniusModelRotator + IntentClassifier + ModelProfile + GMRSelection + CircuitBreaker inline).
+   453→- Read nexus_os/gmr/circuit_breaker.py (59L — AdaptiveCircuitBreaker with 3-state machine + exponential backoff).
+   454→- Read nexus_os/gmr/domain_mapping.py (54L — 6-domain → primary+fallback map with real model names from registry).
+   455→- Read fusion-pack/WIRED_VS_MOCKED.json (192L — 14 components × {status, data_source, mutations_persist, backend_contract, public_safe, issues} + 19 api_routes + summary).
+   456→
+   457→Key Findings:
+   458→
+   459→A. PRISMA SCHEMA AUDIT (12 models, 203 lines)
+   460→==============================================
+   461→
+   462→ALL 12 MODELS:
+   463→1. Agent — id (cuid), name, type (worker/coordinator/specialist), status (idle/busy/error/offline), domain?, trustScore (Float default 0.5), totalTokens, tasksDone, tasksFailed, lastActive, createdAt, updatedAt. Relations: vaultEntries[], decisions[], testRuns[]. NO INDEX on status/domain/trustScore.
+   464→2. VaultEntry — id, agentId, agent (FK), track (EVENT/TRUST/CAP/FAIL/GOV), category, key, value (JSON string), score (Float), createdAt. NO prevHash/chainHash field — NOT actually hash-chained at DB level. NO INDEX on track/agentId/createdAt.
+   465→3. GovernorDecision — id, agentId, agent (FK), action, scope (SELF/PROJECT/CROSS/SYSTEM), impact (LOW/MED/HIGH/CRIT), decision (ALLOW/DENY/HOLD), reason?, trustAtTime, createdAt. NO INDEX on agentId/createdAt/decision.
+   466→4. ModelEntry — id, name, provider, tier, domain, health, latencyMs, costPer1k, isFree, isActive, totalCalls, successRate, lastChecked, createdAt, updatedAt. NO INDEX on provider/domain/isActive. NO pool field (FAST/PREMIUM) — missing GMR pool concept.
+   467→5. TestTemplate — id, name, domain, tvdPrompt, validatorCode, skillGuide?, difficulty, sourceId?, isActive, createdAt, testRuns[]. NO INDEX on domain/isActive.
+   468→6. TestRun — id, templateId (FK), agentId? (FK), modelName, mode (single/icl/agentic), status (pending/running/passed/failed/error), output?, validatorResult?, tokensUsed, durationMs, collapseDetected, vapProofHash?, createdAt, completedAt?. NO INDEX on templateId/agentId/status/createdAt.
+   469→7. Paper — id, externalId?, type, title, pdfUrl?, repoUrl?, abstractSummary?, conclusionTakeaway?, relevanceScore, priorityTier (P0/P1/P2), nexusMapping? (JSON), keyNumbers? (JSON), implementationTask?, deliverable?, isVetted, createdAt, updatedAt. NO INDEX on priorityTier/externalId/type.
+   470→8. TokenUsageLog — id, agentId?, model, promptTokens, completionTokens, totalTokens, cost, apiEndpoint?, createdAt. NO INDEX on agentId/model/createdAt.
+   471→9. SessionBudget — id, totalBudget (100000 default), usedBudget (0), remainingBudget (100000), isActive, startedAt, endedAt?. NO unique constraint on isActive — risk of multiple active budgets. NO INDEX on isActive.
+   472→10. SystemConfig — id, key (@unique), value (JSON string), updatedAt. Properly indexed via @unique on key. Used for: constitution, nexus_state, governor_thresholds, danger_patterns, OPENROUTER_API_KEY, etc.
+   473→11. RateLimitLog — id, provider, endpoint, method, statusCode, wasRateLimited, wasCached, wasDeduped, responseTimeMs, tokensUsed, keyId?, errorMessage?, requestBody?, createdAt. NO INDEX on provider/createdAt/statusCode — performance risk for /api/rate-limit/status aggregations.
+   474→12. ApiKey — id, provider, keyPrefix (8 chars), keySuffix (4 chars), isActive, health (healthy/degraded/rate_limited/error/no_key), totalRequests, total429s, successRate, lastError?, cooldownUntil?, lastUsed?, createdAt, updatedAt. NO INDEX on provider/isActive. Key material is NOT stored (only prefix/suffix for identification) — security-positive design.
+   475→
+   476→WELL-DESIGNED:
+   477→- SystemConfig (key/value JSON pattern flexible enough for any config; @unique constraint correct)
+   478→- Paper (rich metadata, separates paper vs repo types, JSON for nexusMapping/keyNumbers, priorityTier enum-validated in route)
+   479→- TestRun (collapses pass/fail/collapse/error semantics well; vapProofHash present; nullable completedAt allows in-flight tracking)
+   480→- ApiKey (prefix/suffix pattern never stores the actual key — proper secret hygiene)
+   481→
+   482→NEEDS IMPROVEMENT:
+   483→- VaultEntry: claims 5-track schema but lacks chainHash/prevHash fields — vault chain verification in route.ts only checks timestamp monotonicity + JSON parse + score range, NOT cryptographic chaining. Python VaultManager uses UNIQUE(agent_id, lane, track_type, key) upserts — NOT append-only chain. Two parallel vault designs.
+   484→- SessionBudget: no enforcement that exactly one row has isActive=true; /api/tokens POST uses findFirst({where:{isActive:true}}) — silently uses first match if multiple. No historical budget tracking (endedAt populated but never queried for trends).
+   485→- RateLimitLog: no indexes — full-table scans on /api/rate-limit/status getAllStatus() loop over all providers with findMany({take:100, orderBy:createdAt:desc}). Will degrade as logs grow.
+   486→- Agent: trustScore is single Float — does NOT model lane-scoped trust (Python trust_engine_v2 has per-lane TrustRecord:score with separate convergence/regression/cdr per lane). Dashboard displays ONE score per agent — loses lane resolution.
+   487→- ModelEntry: missing pool (FAST/PREMIUM) field — GMR tab has to hardcode pool assignments because schema doesn't model them. Missing circuit_breaker_state field for tracking OPEN/HALF_OPEN/CLOSED per model.
+   488→- GovernorDecision: missing lane field — decisions can't be filtered by governance lane (research/review/audit/impl). missing CDR stage at decision time. missing danger_level (SAFE/CAUTION/RESTRICTED/HIGH_RISK/CRITICAL).
+   489→- TestRun: missing actualTokens vs tokensUsed distinction. tokensUsed is `output.split(/\s+/).length * 1.3` heuristic (word-count * 1.3) — NOT real tokens. Missing model_pool field (FAST/PREMIUM) — can't slice "did PREMIUM pool handle X% of test runs".
+   490→- TokenUsageLog: missing operation_type (Task delegation / Skill / Memory query / Inference / Governance / Audit) — Python OperationType enum has 6 categories; Prisma has none.
+   491→
+   492→MISSING MODELS (high-priority gaps):
+   493→1. TrustHistory (time-series) — agent_id, lane, score, delta, cdr_stage, danger_level, regression_events, convergence_turns, recorded_at. Currently the dashboard /api/trust-engine recomputes lane trust from Agent.trustScore with hard-coded lane modifiers (-0.05/+0.0/+0.02/-0.03). Python trust_engine_v2 keeps history_delta list in-memory + persists only "current" key to vault. NO time-series table for charting trust trajectory over hours/days.
+   494→2. RotationEvent — task_id, agent_id, intent_category, pool_selected, primary_model, fallback_models[], model_used, handoff_count, success, tokens_used, cost_saved, savings_reason, trace_id, recorded_at. GMR rotator.execute_with_fallback already calls savings.record() but no Prisma persistence. GMR tab hardcodes rotation log because no model exists.
+   495→3. FailoverEvent — model_name, failure_count_at_trip, circuit_state_before, circuit_state_after, cooldown_seconds, recovery_attempts, recovered_at, recorded_at. Python AdaptiveCircuitBreaker logs to Python logger but no Prisma table. GMR tab hardcodes failover log.
+   496→4. ActivityFeed — id, kind (decision/vault/rotation/failover/test_run/token_warning/rate_limit/seed), actor_id, summary, severity, payload (JSON), created_at. Overview tab pillar activity feed is SIMULATED because no unified activity table exists. Each /api/* could write to ActivityFeed for a real cross-cutting timeline.
+   497→5. ProviderHealthSnapshot — provider, latency_p50_ms, latency_p95_ms, success_rate_5m, success_rate_1h, rate_limit_remaining, cooldown_active, recorded_at. Currently /api/rate-limit/status does live aggregation over RateLimitLog on every GET — should be pre-aggregated into 1-minute/5-minute/1-hour snapshots for chart performance.
+   498→6. SkillRecord — agent_id, lane, pattern (regex), success_count, failure_count, success_rate, sample_prompts[], auto_forged, last_matched_at. Python SkillSmith tracks this in-memory + skill_registry dict; no Prisma persistence. Means skills are lost on Next.js process restart.
+   499→7. ConstitutionAudit — change_id, key, old_value, new_value, changed_by, changed_at, ip, user_agent. Settings PUT mutates SystemConfig with no audit trail — any operator can change OPENROUTER_API_KEY or governor_thresholds silently.
+   500→8. ChatMessage — session_id, role, content, model_used, tokens_in, tokens_out, latency_ms, created_at. WIRED_VS_MOCKED.json confirms "Chat messages in Zustand only (not DB)". Conversation context lost on page refresh.
+   501→9. VaultChainEntry (or augment VaultEntry) — add prev_hash, entry_hash, signature fields for actual cryptographic chain. Current vault verify_chain endpoint just checks timestamps + JSON parses — NOT a tamper-evident chain.
+   502→
+   503→B. API ROUTE INVENTORY (15 files, 19 endpoints per WIRED_VS_MOCKED summary)
+   504→==========================================================================
+   505→
+   506→| Route | Method(s) | Prisma Models Touched | Wired/Mock Per JSON | Notes |
+   507→|---|---|---|---|---|
+   508→| /api (root) | GET | none | n/a | Hello world stub |
+   509→| /api/system | GET | Agent, ModelEntry, TestTemplate, Paper, SessionBudget, SystemConfig, GovernorDecision, TestRun, VaultEntry, TokenUsageLog (11 of 12 models) | WIRED (real data) but consumed_by: NONE — biggest fusion-pack gap | Computes pillars/stats/agentActivity/tokenHistory/healthTimeline/collapseRateTrend; some functions (computeAgentActivity, computeHealthTimeline) use sin-wave + seededRandom to fake weekly hourly time-series from point-in-time data |
+   510→| /api/agents | GET | Agent | WIRED | Bare list, no relations |
+   511→| /api/governor | GET, POST | GovernorDecision (R+W), Agent (R), SystemConfig (R+W for governor_thresholds, danger_patterns) | WIRED | POST actions: appeal, update_threshold, add_pattern. Appeal creates HOLD decision referencing original. No actual TrustEngine computation — thresholds are pure JSON config; decisions are pre-existing seed rows |
+   512→| /api/vault | GET, POST | VaultEntry (R+W via include Agent) | WIRED | GET returns latest 100 entries. POST action: verify_chain (only action). Verification is weak: checks timestamp monotonicity, JSON parse, score range — NO cryptographic chain. No filter by track/agent in GET (always returns latest 100) |
+   513→| /api/swarm | GET, POST | Agent (R+W), VaultEntry (W), SystemConfig (R for maxAgents) | WIRED | POST actions: reassign_task, terminate_worker, restart_worker, spawn_worker, update_trust. spawn_worker enforces maxAgents limit from constitution. Every action writes a VaultEntry (EVENT track) for audit trail. update_trust clamps to [0,1]; computes delta = newScore - oldScore. NO circuit breaker, NO skill verification, NO real Python swarm Foreman dispatch — these are DB-only state changes |
+   514→| /api/models | GET, POST | ModelEntry (R+W) | WIRED | POST actions: toggle, health_check, batch_health_check. health_check actually pings ZAI SDK with "respond with OK" prompt, measures latency, updates health/latencyMs/successRate/totalCalls. Batch is sequential (for loop). ZAI is the only provider exercised — does NOT test OpenRouter/Cerebras/Jina models even though they're in seed data |
+   515→| /api/stresslab | GET, POST | TestTemplate (R), TestRun (R+W), Agent (R for idle agent), TokenUsageLog (W) | WIRED — "strongest component" per fusion-pack | POST actions: run_test, batch_run. Real ZAI SDK call. validateResponse() does refusal-pattern detection + word-count scoring + domain-keyword matching (heuristic, not the validatorCode field which is unused). vapProofHash = `vap-{runId.slice(0,8)}-{Date.now().toString(36)}` — NOT a cryptographic hash, just a unique ID. tokensUsed = `output.split(/\s+/).length * 1.3` — word-count heuristic (1.3x multiplier). |
+   516→| /api/research | GET, PUT | Paper (R+W) | WIRED | GET returns papers + P0/P1/P2 bucketed. PUT updates priorityTier/isVetted/implementationTask only. No POST to add new papers, no DELETE, no Alphaxiv fetch despite docs suggesting research pipeline. NO external arXiv/Alphaxiv API call — papers must be seeded manually |
+   517→| /api/tokens | GET, POST | SessionBudget (R+W), TokenUsageLog (R+W), Agent (R+W) | WIRED | POST action: log_usage. Updates budget.usedBudget/remainingBudget. Updates Agent.totalTokens. NO budget enforcement — caller is trusted to log AFTER use. No pre-check endpoint. No cost computation (cost: 0 default in stresslab). |
+   518→| /api/trust-engine | GET | Agent (R), GovernorDecision (R) | WIRED | Returns trust_matrix + cdr_stages + cdr_distribution + danger_levels + health_summary + hardwall_config. Computes lane trust via `trust + lane_modifier` (audit=-0.05, review=0.0, impl=+0.02, research=-0.03) — PURELY LOCAL HEURISTIC, not Python trust_engine_v2 logic. CDR thresholds: <0.15=COLLAPSE, <0.30+5 regressions=HALLUCINATION, <0.30=DEGRADED, 3+ regressions + <0.50=MEMORY_CORRUPTION. hardwall_config returned is constant dict (baseline=0.25, max=0.995, success_delta=0.04, failure=-0.10, critical=-0.20, logistic_center=0.50, steepness=0.10, decay_lambda=0.02, collapse=0.15, escalation=0.30). The Python class USES the same constants but the dashboard never calls it. |
+   519→| /api/rate-limit/status | GET | RateLimitLog (R), plus in-memory rate-limiter/api-key-manager/api-cache | WIRED | Aggregates by provider, computes hourlyUsage via groupByHour. cacheStats/dedupStats/queueDetails come from in-memory modules (lost on restart). N+1 query pattern: loops over PROVIDER_RATE_LIMITS keys doing findMany per provider (6 providers × 100 rows each). |
+   520→| /api/seed | POST | Agent, ModelEntry, TestTemplate, Paper, SessionBudget, SystemConfig (all W) | WIRED | Seeds 5 agents, 8 models, 5 templates, 6 papers, 1 budget, 2 system configs. NOT idempotent (no upsert — calling twice creates duplicates). Seeds OPENROUTER_API_KEY placeholder? Actually no — only constitution and nexus_state |
+   521→| /api/settings | GET, PUT, DELETE | SystemConfig (R+W+D) | WIRED | Generic key/value store. PUT upserts by key. DELETE removes by key. Stores OPENROUTER_API_KEY, OPENAI_API_KEY, CEREBRAS_API_KEY, JINA_API_KEY, KILOCODE_API_KEY as plaintext JSON values — NO ENCRYPTION at rest. (Prisma SQLite by default is unencrypted.) |
+   522→| /api/ai-bridge | GET, POST | none directly (uses in-memory ai-provider-bridge module) | WIRED | GET: route list + provider statuses + summary. POST: routes chat through z-ai (direct SDK) OR openrouter (fetch with API key from api-key-manager). Falls back to ZAI on OpenRouter 429/error. Updates route health (in-memory). Does NOT log to TokenUsageLog or RateLimitLog — silent usage. |
+   523→| /api/ai-bridge/providers | GET, POST | none directly | WIRED | GET: provider statuses + summary. POST: health check single provider via healthCheckProvider(). |
+   524→| /api/chat | POST | none | WIRED | Single ZAI SDK call with hardcoded NEXUS system prompt. No message persistence. No token logging. No rate limit. |
+   525→| /api/proxy | GET, POST | RateLimitLog (W via logToDatabase) | WIRED | POST: external API proxy with cache→dedup→rate-limit→forward→log pipeline. Logs to RateLimitLog. recordKey429/recordKeyError/recordKeySuccess mutate in-memory api-key-manager state. processQueue() drains queue on successful response. extractTokensUsed() reads response.usage.total_tokens. |
+   526→
+   527→Wired/Mock Classification Per fusion-pack/WIRED_VS_MOCKED.json:
+   528→- WIRED (8): stresslab-tab, governor-tab, vault-tab, research-tab, swarm-tab, tokens-tab, rate-limit-tab, ai-assistant, command-palette
+   529→- WIRED+MOCK (1): gmr-tab (real /api/models + hardcoded pools/rotation/failover/AI bridge routes)
+   530→- SIMULATED (2): overview-tab (ignores /api/system entirely), system-logs (hardcoded templates)
+   531→- MOCK (1): notification-center
+   532→- 17 of 19 API routes serve real data; 15 are actually consumed by UI; /api/system is the biggest gap (real but unused)
+   533→
+   534→C. TRUST ENGINE v2.2 DEEP DIVE
+   535→==============================
+   536→
+   537→PYTHON CANONICAL (nexus_os/governor/trust_engine_v2.py — TrustEngineV2 class):
+   538→- Constants: BASELINE_SCORE=25.0, MAX_SCORE=99.5 (asymptotic plateau — never reaches 100), MIN_SCORE=0.0, SUCCESS_BASE_DELTA=4.0, FAILURE_DELTA=-10.0, CRITICAL_DELTA=-20.0, LOGISTIC_CENTER=50.0, LOGISTIC_STEEPNESS=10.0, BASE_DECAY_LAMBDA=0.02, CONVERGENCE_THRESHOLD=0.5, CDR_ESCALATION_TRUST=30.0, CDR_COLLAPSE_TRUST=15.0, MAX_HISTORY_LENGTH=100
+   539→- 5-STEP UPDATE PIPELINE (update_trust method, lines 240-349):
+   540→  1. ADAPTIVE TEMPORAL DECAY: lambda(t) = base_lambda * (1 + validator_disagreement_rate). decay_amount = lambda * (score - baseline). new_score = max(baseline, min(MAX_SCORE, score - decay)). Decay NEVER pulls below baseline (only excess decays).
+   541→  2. DELTA CALCULATION: if !success: delta = -10 (FAILURE_DELTA), regression_events++. else: delta = SUCCESS_BASE_DELTA * logistic_scale(score, difficulty). logistic_scale: 1/(1+exp(-(T-50)/10)) * difficulty. At T=25 (baseline), logistic = 1/(1+exp(2.5)) ≈ 0.075 → success gain ≈ 0.3 points. At T=50, logistic = 0.5 → gain = 2 points. At T=90, logistic = 1/(1+exp(-4)) ≈ 0.98 → gain = 3.92 points. **WAIT — this means gains are SMALL at low trust and LARGER at high trust, contradicting the docstring "logistic scaling prevents gaming"**. The actual behavior is the opposite: low-trust agents barely recover, high-trust agents accelerate. The "anti-gaming" framing is questionable.
+   542→  3. NON-COMPENSATORY CRITICAL: if danger == CRITICAL: delta = -20 (CRITICAL_DELTA, hard block), regression_events++, force cdr_stage to at least CASCADE. This overrides any success — even a successful CRITICAL action reduces trust by 20. This is the "non-compensatory" property.
+   543→  4. APPLY DELTA + TRACK PEAK: new_score = max(MIN, min(MAX, score+delta)). Update peak_score. Append delta to history_delta (kept at last 100).
+   544→  5. CDR STATE MACHINE (_update_cdr_stage): if score < 15 → COLLAPSE. Else if should_escalate(current_stage, score, regressions) → next_stage(). should_escalate rules: NORMAL+score<30 → DEGRADED; DEGRADED+regressions>=3 → MEMORY_CORRUPTION; MEMORY_CORRUPTION+score<20 → HALLUCINATION; HALLUCINATION+regressions>=5 → CASCADE. Recovery: if score>50 AND cdr_stage>NORMAL AND regression_events==0 AND convergence_turns>5 → step down one stage.
+   545→- VELOCITY CALC (_calculate_velocity): weighted average of last 10 history_delta values, weights 1..10 (more recent = higher weight). Returns absolute value.
+   546→- VAULT PERSISTENCE: store_track(agent_id, lane, "trust", "current", payload) where payload = {score, last_updated, convergence_turns, regression_events, cdr_stage, validator_disagreement_rate, total_validations, peak_score, history_delta[-20:]}. NOTE: "current" is a SINGLE KEY per agent:lane — overwrites prior state. Only last 20 deltas persisted. So the vault is NOT a chain — it's a current-state cache.
+   547→- TRUST MATRIX OUTPUT: agent_id, lane, trust (rounded 2dp), cdr_stage, cdr_severity, convergence_turns, regression_events, total_validations, peak_score, trust_velocity.
+   548→
+   549→CDR 6 STAGES (CDRStage enum):
+   550→  0=Normal, 1=Degraded Reasoning, 2=Memory Corruption, 3=Output Hallucination, 4=Cascade, 5=Collapse. Severity = index in order.
+   551→
+   552→DANGER 5 LEVELS (DangerLevel enum):
+   553→  0=SAFE, 1=CAUTION, 2=RESTRICTED, 3=HIGH_RISK, 4=CRITICAL. CRITICAL is the only one with hard-block semantics.
+   554→
+   555→PARALLEL trust_scoring.py (HOT-PATH IMPL — 259 lines):
+   556→- compute_score(inp, lane_params) — separate formula using LANE_PARAMS (qmin, n0, Rcrit, alpha, beta, gamma, eta, kappa, delta, epsilon) per lane (RESEARCH, REVIEW, AUDIT_SECURITY, COMPLIANCE, IMPLEMENTATION, ORCHESTRATION, SYNTHESIS).
+   557→- Formula: q_gated = (Q - qmin) / (1 - qmin); Qeff = q_gated * (1 - exp(-n/n0)); P = alpha*U + gamma*D_plus - beta*R - eta*D_minus; raw_score = tanh(kappa * Qeff^delta * P); score = 0 if |raw_score| < epsilon else raw_score. Invariant: -1 <= score <= 1.
+   558→- INVARIANTS: inv1 (blocked/unassigned/not_applicable → None), inv2 (hard_fail → -1 + ESCALATED), inv3 (score in [-1, 1]).
+   559→- MemoryTracks class is in-process (no DB persistence). update_trust uses Beta-Binomial: alpha += Qeff*max(score,0); beta += Qeff*(max(-score,0) + 0.5*hard_fail). get_trust = alpha/(alpha+beta).
+   560→- Authority band: >0.8 trust + strong capability = "elevated"; <0.3 or >5 failure patterns = "restricted"; else "standard".
+   561→- THREE PARALLEL TRUST SYSTEMS:
+   562→  1. trust_engine_v2.py (TrustEngineV2) — logistic + decay + CDR, persisted to vault
+   563→  2. trust_scoring.py (compute_score + TrustScoringGate) — Beta-Binomial + lane params, in-memory only
+   564→  3. /api/trust-engine/route.ts — dashboard computes lane trust with hard-coded `trust + modifier` heuristic, returns CDR via simple thresholds
+   565→
+   566→DASHBOARD TRUST DISPLAY (/api/trust-engine):
+   567→- Reads Agent.trustScore (single Float) + GovernorDecision history.
+   568→- Computes regressions = denied_count + high_impact_count.
+   569→- Computes lane_trust = clamp(trust + lane_modifier, 0, 0.995) where audit=-0.05, review=0.0, impl=+0.02, research=-0.03.
+   570→- Computes CDR via simple if-tree (matching Python thresholds).
+   571→- Returns hardwall_config as static dict — dashboard claims to expose Python constants but doesn't actually run Python.
+   572→- agentActivity, peak_trust = min(0.995, trust + 0.05) — fake "peak" computation.
+   573→- disagreement_rate = min(1, regressions / total_decisions) — close to Python's validator_disagreement_rate concept but derived differently.
+   574→
+   575→HOW TRUST FEEDS MODEL SELECTION (Python path):
+   576→- GeniusModelRotator.select() does NOT use trust directly. It uses budget_remaining + intent_category + domain_mapping to pick a cascade.
+   577→- TeamCoordinator (Python) uses worker.trust_score *= 0.9 + 0.1 on success; *= 0.8 on failure — DIFFERENT formula than trust_engine_v2 (which uses logistic scaling). Two trust update formulas in the Python codebase alone.
+   578→- /api/swarm route's update_trust action uses Math.max(0, Math.min(1, agent.trustScore + delta)) — third formula, additive with manual clamp.
+   579→
+   580→GOVERNANCE FEED:
+   581→- /api/governor POST action 'appeal' creates a HOLD GovernorDecision referencing the original.
+   582→- /api/governor POST action 'update_threshold' writes governor_thresholds JSON to SystemConfig — read by GET but NOT enforced anywhere (no route checks "agent.trustScore < threshold.research → deny").
+   583→- Danger patterns are similarly stored but not matched against incoming requests — they're documentation, not enforcement.
+   584→
+   585→D. VAULT 5-TRACK MODEL
+   586→=====================
+   587→
+   588→PYTHON CANONICAL (vault/manager.py + memory_tracks.py):
+   589→- 5 TRACKS (MemoryTrack enum): EVENT (raw task outcomes), TRUST (per-lane Bayesian reputation), CAPABILITY (what agent is good at), FAILURE_PATTERN (recurring weaknesses), GOVERNANCE (behavior under rules).
+   590→- VAULT SCHEMA (vault/manager.py): SQLite table `agent_memory_tracks` with columns: id (autoincrement), agent_id, lane, track_type (CHECK in ('event','trust','capability','failure_pattern','governance')), key, value (JSON), updated_at. UNIQUE constraint on (agent_id, lane, track_type, key). UPSERT pattern: INSERT ... ON CONFLICT ... DO UPDATE.
+   591→- 5-TRACK IN-MEMORY (memory_tracks.py MemoryTracker class):
+   592→  - EVENT: append_event(agent_id, content, outcome, duration_ms, token_count, trace_id, project_id). Stored in _buffers[agent_id][EVENT][].
+   593→  - TRUST: append_trust(agent_id, lane, trust_score, evidence_count, content, trace_id). Lane validated against VALID_LANES = {research, audit, compliance, implementation, orchestration, general}.
+   594→  - CAPABILITY: append_capability(agent_id, skill_tags, confidence, content). Updates CapabilityProfile via EMA: store[tag] = 0.7*old + 0.3*confidence. Categories: languages (python/javascript/rust/go/typescript), domains (code/research/analysis/security), tools (everything else).
+   595→  - FAILURE_PATTERN: append_failure(agent_id, failure_type, lane, content, trace_id). Cached in _failures[agent_id][failure_type] with frequency counter. Severity: >=5="high", >=2="medium", else="low".
+   596→  - GOVERNANCE: append_governance(agent_id, rule_violated, severity, content, trace_id).
+   597→- SINGLETON: get_tracker() returns global _tracker.
+   598→
+   599→PRISMA VAULT (VaultEntry model):
+   600→- Fields: id, agentId (FK to Agent), track (String: EVENT/TRUST/CAP/FAIL/GOV — NOTE: short codes vs Python's full names), category, key, value (JSON string), score (Float), createdAt.
+   601→- CRITICAL MISMATCH: Python vault uses (agent_id, lane, track_type, key) composite key — UPSERT semantics. Prisma vault uses id (cuid) — APPEND semantics. Two completely different data models.
+   602→- NO CHAIN HASH: Prisma VaultEntry has no prev_hash/hash/signature fields. Python vault has no chain either (UNIQUE upsert). So "hash-chained" claim in fusion-pack/docs is ASPIRATIONAL not IMPLEMENTED.
+   603→
+   604→CHAIN VERIFICATION (/api/vault POST action=verify_chain):
+   605→- Reads all VaultEntry rows ordered by createdAt ASC.
+   606→- Checks: entries exist, each has agentId, track, key, JSON-parseable value.
+   607→- Checks: timestamps monotonically non-decreasing.
+   608→- Checks: scores in [0, 1].
+   609→- Returns: {valid, entryCount, issues[]}.
+   610→- DOES NOT: recompute hashes, verify signatures, detect tampering, verify track-specific schema, verify lane references, check agent existence.
+   611→- This is NOT cryptographic verification — it's basic structural validation. A malicious actor with DB write access could rewrite any vault entry undetected.
+   612→
+   613→BROWSE/FILTER (/api/vault GET):
+   614→- Returns latest 100 entries ordered by createdAt DESC.
+   615→- NO filter parameters (track, agentId, category, dateRange) — UI must filter client-side.
+   616→- Includes agent.name via Prisma relation.
+   617→
+   618→POISONING DETECTION (nexus_os/vault/poisoning.py per ARCH-1):
+   619→- PoisoningError exception class declared in manager.py as minimal stub.
+   620→- Per ARCH-1 listing, vault/ contains poisoning.py file (54-line file in source tree). NOT WIRED into /api/vault route. Dashboard has no poisoning detection UI.
+   621→
+   622→E. TOKEN BUDGET + MONITORING
+   623→============================
+   624→
+   625→PRISMA MODELS:
+   626→- SessionBudget: totalBudget (default 100000), usedBudget (0), remainingBudget (100000), isActive (Boolean), startedAt, endedAt?. Only one row expected to be active. Mutated by /api/tokens POST log_usage.
+   627→- TokenUsageLog: agentId?, model, promptTokens, completionTokens, totalTokens, cost, apiEndpoint?, createdAt. Written by /api/tokens POST and /api/stresslab POST (run_test). NOT written by /api/ai-bridge, /api/chat, /api/proxy.
+   628→
+   629→BUDGET ENFORCEMENT:
+   630→- /api/tokens POST log_usage: caller passes promptTokens + completionTokens. Route computes total = sum, inserts TokenUsageLog, fetches active SessionBudget, computes newUsed = oldUsed + total, newRemaining = max(0, totalBudget - newUsed), updates both fields. Updates Agent.totalTokens if agentId provided.
+   631→- /api/stresslab POST run_test: writes TokenUsageLog with promptTokens = round(tokenCount * 0.3), completionTokens = round(tokenCount * 0.7), totalTokens = round(tokenCount), cost = 0. Then writes its own budget update? Actually NO — stresslab only writes TokenUsageLog; it does NOT update SessionBudget. **INCONSISTENCY**: /api/tokens updates budget on log_usage, /api/stresslab writes TokenUsageLog but does NOT update budget. So SessionBudget.usedBudget undercounts stresslab usage.
+   632→- /api/ai-bridge POST: ZAI call, NO TokenUsageLog, NO SessionBudget update. **SILENT USAGE** — these tokens are never counted.
+   633→- /api/chat POST: ZAI call, NO TokenUsageLog, NO SessionBudget update. **SILENT USAGE**.
+   634→- /api/proxy POST: logs to RateLimitLog with tokensUsed (from response.usage.total_tokens), but does NOT update SessionBudget.
+   635→
+   636→TOKEN ESTIMATION HEURISTIC:
+   637→- /api/stresslab: tokenCount = output.split(/\s+/).length * 1.3 (word count × 1.3). This is OUTPUT tokens only — no input tokens counted.
+   638→- Python TokenGuard.track(agent_id, tokens, ...) — accepts tokens as parameter (caller responsibility).
+   639→- Python TokenGuard.check_and_reserve(): atomic check + reserve with reservation_id hash.
+   640→- z-ai-web-dev-sdk does NOT return token counts in completion object — so callers can't get real prompt/completion tokens from ZAI. They must estimate.
+   641→- ACCURACY RISK: word count × 1.3 has ~30-50% error vs real BPE tokenization for English (varies by language — CJK is much higher). Provider billing will diverge from internal accounting. ARCH-1 already flagged this as risk #7.
+   642→
+   643→TOKENGUARD PYTHON (monitoring/token_guard.py):
+   644→- 4 default budgets: agent=50000, skill=10000, swarm=200000, session=500000 (different from Prisma SessionBudget.totalBudget=100000).
+   645→- _get_budget_key(agent_id): if agent_id in budgets → that key; elif 'skill' in agent_id.lower() → 'skill'; elif 'swarm'/'foreman' in agent_id.lower() → 'swarm'; else → 'agent'. So a Prisma Agent named "coordinator" or "worker-1" maps to 'agent' budget (50000), NOT to per-agent tracking.
+   646→- WARNING_THRESHOLD=80%, HARD_STOP_THRESHOLD=95%. check() returns False if remaining < required OR percentage >= hard_stop.
+   647→- Audit trail: in-memory list of AuditEntry (timestamp, actor, action, input_tokens, output_tokens, context, outcome, signature). Signature = SHA-256(f"{actor}:{action}:{input}:{output}:{time.time()}")[:16]. _audit capped at 10000 entries.
+   648→- semantic_cache_get/set: warm-path cache by query_hash with similarity threshold 0.85 (but no actual embedding similarity — just exact hash match with score field).
+   649→- route(task_type, complexity, budget_remaining): rule-based model recommendation (low/code → qwen3:4b-thinking; low/other → osman-speed; medium/code → osman-coder; medium/research → osman-reasoning; medium/other → osman-agent; high + budget>50000 → gemini-3.1-pro; high + budget<=50000 → osman-reasoning).
+   650→- trigger_fallback(agent_id): hardcoded model_map for 4 OSMAN agents + frontier.
+   651→- analyze_trends(agent_id, period): splits audit into halves, compares sums; increasing/decreasing/stable. savings_potential hardcoded "8-18%" (SkillSmith target).
+   652→- **TOKENGUARD IS NOT WIRED INTO ANY DASHBOARD API ROUTE**. /api/tokens/route.ts does its own budget math directly against Prisma. /api/ai-bridge, /api/chat, /api/proxy do not call TokenGuard at all.
+   653→
+   654→EXECUTION BOUNDARIES (monitoring/strategies.py):
+   655→- @hot_path decorator: enforces sync (<20ms target). Raises RuntimeError if wrapped function is async.
+   656→- @warm_path decorator: offloads to threading.Thread(daemon=True). Returns immediately with {status:"queued", path:"warm"}. **BUG**: caller can't get the actual return value — fire-and-forget only.
+   657→- SemanticCache class: in-memory dict with RLock. get() is @hot_path (sync). set() is @warm_path (background thread) — but set() acquires the same RLock as get(), so warm writes can block hot reads under contention. warm_cache() bulk pre-load (cold path).
+   658→
+   659→F. GMR MODEL ROTATION
+   660→=====================
+   661→
+   662→GENIUS MODEL ROTATOR (gmr/rotator.py — GeniusModelRotator class):
+   663→- DUAL POOL (ModelPool enum): FAST (local, cheap, <500ms latency), PREMIUM (cloud, capable, >500ms latency).
+   664→- INTENT CLASSIFICATION (IntentClassifier.classify): keyword scoring across 6 categories (CODE, RESEARCH, REASONING, SPEED, SECURITY, GENERAL). Each category has 8-12 keywords. Metadata boosts: is_code_task +5 CODE, requires_deep_reasoning +5 REASONING, time_sensitive +3 SPEED. Returns highest score or GENERAL if all zero.
+   665→- POOL RULES: SPEED→FAST, CODE→FAST, RESEARCH→PREMIUM, REASONING→PREMIUM, SECURITY→PREMIUM, GENERAL→None (either). Budget override: if budget_remaining < 50000 → always FAST regardless of intent.
+   666→- WEIGHTS for composite score: success_rate=0.10, throughput=0.05, latency_inverse=0.30, cost_inverse=0.25, intent_match=0.30. Composite = success_rate*w + (tokens_per_sec/100)*w + (1000/(latency+1))*w + (1/(cost+0.01))*w + intent_match_bonus. Preferred pool bonus: if model.pool == preferred_pool → score *= 1.1.
+   667→- DOMAIN MAPPING (gmr/domain_mapping.py): 6 domains (code, reasoning, research, fast, security, general). Each has primary[] (5-2 models with provider/tier/latency/cost/status) + fallback_chain[]. Real model names: osman-coder, Devstral 2 123B, Qwen3 Coder 480B, GPT OSS 120B, Codestral, Trinity Large Preview, Kimi K2 Thinking, GLM 5, Kimi K2.5, Nemotron 3 Super, MiniMax M2.5, etc.
+   668→- CASCADE GENERATION (get_routing_cascade): returns top 3 candidates sorted by composite score. Falls back to DOMAIN_MAPPING fallback_chain if no candidates. Returns ContextPacket for zero-context-loss handoff (task_id, original_prompt, intent, budget_remaining, core_facts, decisions_made, pending_actions, tool_state, trace_id).
+   669→- EXECUTE WITH FALLBACK (execute_with_fallback): iterates cascade. On attempt i>0, prepends context.to_prompt_prefix() to original_prompt (zero-context-loss handoff). On success: models[model].reset_failure_count(), token_guard.track("gmr", tokens_used), savings.record(...). On failure: models[model].record_failure(), continue to next. If all fail: return {success:False, error:"All models failed"}.
+
+[showing lines 420-669 of 837; use offset=670 with limit to continue reading]
