@@ -48,24 +48,77 @@
 - [x] Filter UI on handoffs (status + lane filters).
 - [x] SSE note section on MCP page (documents 7354/sse stream + wiring path).
 
-## STATUS: READY FOR LONG RUN
+## STATUS: NXM-038 REV 2 IN PROGRESS (Steps 1-6 DONE, Step 7 pending)
 
-All milestones (A–E) complete. App compiles, lints clean, dev server healthy on
-:3000. Agent Browser self-verify PASSED (all 4 pages render, handoff create
-flow end-to-end, MCP health degrades to STUB with sample payload, filters work,
-mobile responsive, sticky footer).
+FABLE5 plan (NXM-038 REV 2) execution — the truth rail + honesty rail.
+Grounded in `upload/NEXUSgeneralFABLE5advisorylogs-06.txt` (lines 1870-1970).
 
-## Git backup (anti-wipe)
+### NXM-038 REV 2 Steps
+
+- **Step 1 — Badge substrate** ✅ DONE (commit 7821f8d)
+  DataSourceBadge (WIRED|PACK|SEED|MOCK|OFF) + panelId + WIRED_VS_MOCKED.json manifest.
+  All 5 pages retrofitted. G2 gate: 10 badged == 10 manifest.
+
+- **Step 2 — Pack seam** ✅ DONE (commit 2ea7a22)
+  statePack.ts (zod v4 schema, mtime-cached loader, staleness, credential sweep).
+  data/test_pack.example.json (sentinel: 42 NXM-SEED cards, 25 tools, zo broken).
+  POST/GET /api/import (1.5MB cap, sweep→422, zod validate).
+  GET /api/state (pack reader).
+
+- **Step 3 — Lanes pack-driven** ✅ DONE (commit 2ea7a22)
+  /api/lanes merges pack.lanes over SEED baseline. PackStatusChip in nav.
+  zo=broken when pack loaded. source: "pack"|"seed".
+
+- **Step 4 — MCP de-mock** ✅ DONE (commit 2ea7a22)
+  /api/mcp/tools: 25 pack-driven tools, drift detection (3 added: continuity_append,
+  continuity_tail, cdp_window_probe). /api/mcp/health: reads
+  registry_security.registry_schema_hash (FABLE5 wiring defect fixed).
+  /api/mcp/queue: pack → sample fixture → inline mock (labeled).
+
+- **Step 5 — Mission Board tab** ✅ DONE (commit 2ea7a22)
+  /board page renders 42 NXM cards from pack.board.cards. Stat tiles, status icons,
+  priority colors, PACK badge, import banner. Added to nav (6th tab).
+
+- **Step 6 — Palette + fixes** ✅ DONE (commit 2ea7a22)
+  NexusCommandPalette (Ctrl+K, 6 nav + 1 action, adapted from donor).
+  Ledger reader accepts both 'timestamp' and 'ts' (FABLE5 wiring defect fixed).
+  /api index replaces hello-world stub.
+
+- **Step 7 — Docs + negative control** ⏳ IN PROGRESS
+  [ ] STATE.md updated (this file)
+  [ ] docs/STATE_PACK.md (pack schema + import instructions)
+  [ ] docs/MCP_CONTRACT.md contract:sync note
+  [ ] Negative control: full no-pack walk ⇒ zero unbadged MOCK/SEED
+  [ ] G4 pack round-trip proof (operator pushes fresh pack → sandbox pulls → UI shows new pack_id)
+
+### FABLE5 directives (binding)
+
+- **D-005**: No fabricated data presented as real. Every panel has a DataSourceBadge.
+- **D-010**: FABLE5 plans, never implements. GLM52 implements sandbox-side.
+- **D-014**: NO credential rotations — accepted risk, structural containment.
+- **D-015**: NO GitHub payments — free tier only, no Actions dependency.
+- **D-016**: No NEXUS secret enters the sandbox surface (sweep gate fail-closed).
+
+### What the user sees now (preview)
+
+6 pages with honest badges + pack-driven data:
+- `/` Ops Board — lane grid: SEED→PACK, stats: WIRED, handoffs: WIRED, ledger: WIRED
+- `/board` Mission Board — 42 NXM cards from PACK (test sentinel), PACK badge
+- `/mcp` MCP — health: WIRED, queue: PACK, tools: PACK (25, drift detected)
+- `/lanes` Lanes — doctrine: SEED→PACK (zo=broken from pack)
+- `/handoffs` Handoffs — bus: WIRED (file-backed store)
+- `/browserless` Browserless — OFF (sandbox, token absent)
+
+Nav shows PackStatusChip (TEST · just now) + Ctrl+K command palette.
+
+### Git backup (anti-wipe)
 
 - **Remote:** `specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror` (branch `main`)
-- **Token:** stored in `~/.git-credentials` (mode 600, never tracked).
 - **Identity:** `Canberk 'specimba' Karaerkek <32012089+specimba@users.noreply.github.com>`
-- **Signing:** GPG ed25519 key `8D8015A4E4C4AF93` (no passphrase, headless-safe);
-  uploaded to GitHub; `commit.gpgsign=true` → commits show **Verified**.
+- **Signing:** GPG ed25519 key `FFE1A9C8FA725B36` (regenerated after sandbox wipe;
+  uploaded to GitHub; `commit.gpgsign=true` → commits show **Verified**).
 - **Backup script:** `bash scripts/git-backup.sh [msg]` (commits + pulls + pushes).
-- **Docs:** `docs/GIT_BACKUP.md` (setup, recovery, gitignore policy).
-- Runtime/binary/secret files gitignored (`.env`, `db/*.db`, `data/handoffs.json`,
-  `.zscripts/dev.pid`). Fresh clones start from sample seed.
+- Runtime/binary/secret files gitignored. Fresh clones start from sample seed.
 
 ## Retry protocol
 
