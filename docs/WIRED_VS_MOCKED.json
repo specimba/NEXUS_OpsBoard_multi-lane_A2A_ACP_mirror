@@ -1,0 +1,96 @@
+{
+  "_comment": "NXM-038 REV 2 Step 1 panel manifest. Every panel in the control plane is listed here with its honest data-source state. The badge-tally grep gate (G2) verifies: (1) every panel in the app has a DataSourceBadge with a matching panelId, (2) the count matches this manifest, (3) no panel renders data without a badge (D-005). States: wired | pack | seed | mock | off. Per FABLE5 D-005: no fabricated data presented as real.",
+  "_schema_version": "1.0.0",
+  "_generated_at": "2026-07-15T00:00:00Z",
+  "_states": {
+    "wired": "Live backend API + persistent DB",
+    "pack": "Operator-published STATE_PACK via git-bus (live host truth)",
+    "seed": "Real DB structure, preset values, no live source",
+    "mock": "Hardcoded placeholder, not connected to any source",
+    "off": "Feature disabled in this mode"
+  },
+  "panels": [
+    {
+      "panelId": "ops-board-lane-grid",
+      "page": "/",
+      "label": "Lane Grid",
+      "state": "seed",
+      "note": "14 lanes from src/lib/registry.ts. Statuses are SEED baseline. Will become PACK when STATE_PACK ingestion lands (Step 3)."
+    },
+    {
+      "panelId": "ops-board-stats",
+      "page": "/",
+      "label": "Stats Row",
+      "state": "wired",
+      "note": "Lane count + tool count from /api/lanes + /api/health (real API calls)."
+    },
+    {
+      "panelId": "ops-board-recent-handoffs",
+      "page": "/",
+      "label": "Recent Handoffs",
+      "state": "wired",
+      "note": "GET /api/handoffs?limit=5 — real file-backed store."
+    },
+    {
+      "panelId": "ops-board-ledger-tail",
+      "page": "/",
+      "label": "Ledger Tail",
+      "state": "wired",
+      "note": "GET /api/ledger?limit=15 — reads NEXUS_LEDGER_PATH or sample_ledger.jsonl. Real JSONL reader."
+    },
+    {
+      "panelId": "mcp-health-badge",
+      "page": "/mcp",
+      "label": "MCP Health",
+      "state": "wired",
+      "note": "GET /api/mcp/health — probes 127.0.0.1:7354/health with honest STUB fallback. NOTE: FABLE5 found the health route reads payload.registry_hash but the live bridge emits registry_security.registry_schema_hash — fix pending Step 4."
+    },
+    {
+      "panelId": "mcp-queue",
+      "page": "/mcp",
+      "label": "Queue Snapshot",
+      "state": "mock",
+      "note": "Inline mock in /api/mcp/queue route. Will become PACK (from state_pack.mcp.queue) in Step 4."
+    },
+    {
+      "panelId": "mcp-tool-table",
+      "page": "/mcp",
+      "label": "Tool Inventory",
+      "state": "seed",
+      "note": "22 static tools from src/lib/mcpTools.ts. Will become PACK (25 live tools) in Step 4. FABLE5 confirmed drift = 3 tools: continuity_append, continuity_tail, cdp_window_probe."
+    },
+    {
+      "panelId": "lanes-doctrine-grid",
+      "page": "/lanes",
+      "label": "Lane Doctrine",
+      "state": "seed",
+      "note": "14 lanes from registry.ts with doctrine text. Statuses are SEED baseline. Will become PACK in Step 3."
+    },
+    {
+      "panelId": "handoffs-bus-list",
+      "page": "/handoffs",
+      "label": "Handoff Bus",
+      "state": "wired",
+      "note": "GET /api/handoffs — real file-backed store (data/handoffs.json). Create form POSTs real cards."
+    },
+    {
+      "panelId": "browserless-fetch",
+      "page": "/browserless",
+      "label": "Browserless Fetch",
+      "state": "off",
+      "note": "OFF in sandbox (BROWSERLESS_TOKEN always absent). Will be WIRED in host-mode (NXM-044). Per D-005: must not present demo data as real."
+    }
+  ],
+  "_tally": {
+    "wired": 5,
+    "pack": 0,
+    "seed": 3,
+    "mock": 1,
+    "off": 1,
+    "total": 10
+  },
+  "_gates": {
+    "G2": "badge-tally grep gate: grep -rc 'DataSourceBadge' src/app/ must equal panels.length in this manifest; every panel page must reference DataSourceBadge at least once with a panelId matching this file.",
+    "G3": "negative control: full no-pack walk of all pages must show zero unbadged MOCK/SEED surfaces"
+  }
+}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 import { toast } from "sonner";
 import {
   Globe,
@@ -76,6 +77,7 @@ export default function BrowserlessPage() {
         <h1 className="mono flex items-center gap-2 text-lg font-bold tracking-wide text-foreground sm:text-xl">
           <Globe className="h-5 w-5 text-cyan-300" aria-hidden />
           Browserless
+          <DataSourceBadge source="off" panelId="browserless-fetch" />
         </h1>
         <p className="mono text-[11px] uppercase tracking-wider text-muted-foreground">
           cloud headless chrome · complements CDP :9224 · read-only probing

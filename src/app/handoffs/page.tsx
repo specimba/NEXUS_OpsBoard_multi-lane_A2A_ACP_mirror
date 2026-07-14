@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useNexusFetch } from "@/hooks/use-nexus";
 import { HandoffCard } from "@/components/HandoffCard";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 import { LANES } from "@/lib/registry";
 import type { HandoffCard as HandoffCardType, HandoffStatus, LaneId } from "@/lib/types";
 import { toast } from "sonner";
@@ -122,6 +123,7 @@ export default function HandoffsPage() {
           <h1 className="mono flex items-center gap-2 text-lg font-bold tracking-wide text-foreground sm:text-xl">
             <ArrowLeftRight className="h-5 w-5 text-cyan-300" aria-hidden />
             Handoff Bus
+            <DataSourceBadge source="wired" panelId="handoffs-bus-list" />
           </h1>
           <p className="mono text-[11px] uppercase tracking-wider text-muted-foreground">
             create + track tokens between lanes · file-backed

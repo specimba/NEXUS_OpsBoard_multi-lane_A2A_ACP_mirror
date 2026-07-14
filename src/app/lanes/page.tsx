@@ -3,6 +3,7 @@
 import { useNexusFetch } from "@/hooks/use-nexus";
 import { LaneCard } from "@/components/LaneCard";
 import { QwenWebDevNote } from "@/components/QwenWebDevNote";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 import type { LaneMeta } from "@/lib/types";
 import { Network } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ export default function LanesPage() {
           <h1 className="mono flex items-center gap-2 text-lg font-bold tracking-wide text-foreground sm:text-xl">
             <Network className="h-5 w-5 text-cyan-300" aria-hidden />
             Lane Doctrine
+            <DataSourceBadge source="seed" panelId="lanes-doctrine-grid" />
           </h1>
           <p className="mono text-[11px] uppercase tracking-wider text-muted-foreground">
             success signals · wait policies · status

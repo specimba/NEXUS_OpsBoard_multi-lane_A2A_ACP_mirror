@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { LANE_MAP, accentClasses } from "@/lib/registry";
 import type { LedgerRow } from "@/lib/types";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 import { Loader2, AlertTriangle, FileWarning } from "lucide-react";
 
 const KIND_STYLE: Record<string, string> = {
@@ -45,6 +46,7 @@ export function LedgerTail({
           <h2 className="mono text-xs font-semibold uppercase tracking-widest text-foreground">
             Ledger Tail
           </h2>
+          <DataSourceBadge source="wired" panelId="ops-board-ledger-tail" />
           <span className="mono text-[10px] uppercase tracking-wider text-muted-foreground">
             NEXUScontinuity_runs.jsonl
           </span>

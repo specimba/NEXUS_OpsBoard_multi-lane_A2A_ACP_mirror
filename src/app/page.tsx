@@ -6,6 +6,7 @@ import { LaneCard } from "@/components/LaneCard";
 import { HandoffCard } from "@/components/HandoffCard";
 import { LedgerTail } from "@/components/LedgerTail";
 import { QwenWebDevNote } from "@/components/QwenWebDevNote";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 import type { LaneMeta, HandoffCard as HandoffCardType, LedgerRow } from "@/lib/types";
 import { Activity, ArrowLeftRight, Network, Server } from "lucide-react";
 import Link from "next/link";
@@ -102,7 +103,11 @@ export default function OpsBoard() {
       <KeepVisibleBanner />
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <DataSourceBadge source="wired" panelId="ops-board-stats" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat
           icon={Network}
           label="lanes tracked"
@@ -127,14 +132,18 @@ export default function OpsBoard() {
           value={handoffs.data?.count ?? "—"}
           accent="bg-amber-500/15 text-amber-300"
         />
+        </div>
       </div>
 
       {/* Lane grid */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="mono text-xs font-semibold uppercase tracking-widest text-foreground">
-            Lane Grid
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="mono text-xs font-semibold uppercase tracking-widest text-foreground">
+              Lane Grid
+            </h2>
+            <DataSourceBadge source="seed" panelId="ops-board-lane-grid" />
+          </div>
           <Link
             href="/lanes"
             className="mono text-[10px] uppercase tracking-wider text-cyan-300 hover:text-cyan-200"
@@ -162,9 +171,12 @@ export default function OpsBoard() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="mono text-xs font-semibold uppercase tracking-widest text-foreground">
-              Recent Handoffs
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="mono text-xs font-semibold uppercase tracking-widest text-foreground">
+                Recent Handoffs
+              </h2>
+              <DataSourceBadge source="wired" panelId="ops-board-recent-handoffs" />
+            </div>
             <Link
               href="/handoffs"
               className="mono text-[10px] uppercase tracking-wider text-cyan-300 hover:text-cyan-200"

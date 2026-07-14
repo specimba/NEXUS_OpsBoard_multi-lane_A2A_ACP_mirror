@@ -3,6 +3,7 @@
 import { useNexusFetch } from "@/hooks/use-nexus";
 import { McpHealthBadge } from "@/components/McpHealthBadge";
 import { McpToolTable } from "@/components/McpToolTable";
+import { DataSourceBadge } from "@/components/DataSourceBadge";
 import type { McpHealth, McpToolInfo, McpQueueSnapshot } from "@/lib/types";
 import { Wrench, ListChecks, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -109,7 +110,10 @@ export default function McpPage() {
         </div>
       </div>
 
-      <McpHealthBadge health={health.data} />
+      <div className="flex items-center gap-2">
+        <McpHealthBadge health={health.data} />
+        <DataSourceBadge source="wired" panelId="mcp-health-badge" />
+      </div>
 
       {health.error && (
         <p className="mono text-[10px] text-rose-300/70">
@@ -117,13 +121,21 @@ export default function McpPage() {
         </p>
       )}
 
-      <QueueCard queue={queue.data} />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <DataSourceBadge source="mock" panelId="mcp-queue" />
+        </div>
+        <QueueCard queue={queue.data} />
+      </div>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="mono text-xs font-semibold uppercase tracking-widest text-foreground">
-            Tool Inventory
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="mono text-xs font-semibold uppercase tracking-widest text-foreground">
+              Tool Inventory
+            </h2>
+            <DataSourceBadge source="seed" panelId="mcp-tool-table" />
+          </div>
           <span className="mono text-[10px] uppercase tracking-wider text-muted-foreground">
             {tools.data?.count ?? "—"} tools · static (always available)
           </span>
