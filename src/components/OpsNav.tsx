@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PackStatusChip } from "@/components/PackStatusChip";
 import {
   LayoutDashboard,
   Wrench,
   Network,
   ArrowLeftRight,
   Globe,
+  ClipboardList,
   Activity,
 } from "lucide-react";
 
 const LINKS = [
   { href: "/", label: "Ops Board", icon: LayoutDashboard },
+  { href: "/board", label: "Mission Board", icon: ClipboardList },
   { href: "/mcp", label: "MCP", icon: Wrench },
   { href: "/lanes", label: "Lanes", icon: Network },
   { href: "/handoffs", label: "Handoffs", icon: ArrowLeftRight },
@@ -73,6 +76,7 @@ export function OpsNav() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 sm:flex">
+          <PackStatusChip />
           <span className="mono text-[10px] uppercase tracking-widest text-muted-foreground">
             CDP :9224 · live truth
           </span>

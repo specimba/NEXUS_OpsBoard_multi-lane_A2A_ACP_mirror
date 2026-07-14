@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { OpsNav } from "@/components/OpsNav";
+import { NexusCommandPalette } from "@/components/NexusCommandPalette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <OpsNav />
+        <NexusCommandPalette />
         <main className="flex-1 mx-auto w-full max-w-7xl px-3 sm:px-6 py-5">
           {children}
         </main>

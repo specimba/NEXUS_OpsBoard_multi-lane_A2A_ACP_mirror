@@ -49,10 +49,14 @@ export async function GET() {
       url,
       checked_at,
       payload,
+      // FABLE5 fix: the live bridge emits registry_security.registry_schema_hash,
+      // NOT payload.registry_hash. Read both for backwards compat.
       registry_hash:
-        payload && typeof payload.registry_hash === "string"
+        (payload?.registry_security as Record<string, unknown> | undefined)
+          ?.registry_schema_hash as string | undefined ??
+        (payload && typeof payload.registry_hash === "string"
           ? (payload.registry_hash as string)
-          : undefined,
+          : undefined),
     };
     return NextResponse.json(health);
   } catch (err) {

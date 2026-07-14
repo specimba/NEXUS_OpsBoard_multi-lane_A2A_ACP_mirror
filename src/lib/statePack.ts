@@ -13,6 +13,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 
 // ---- Schema (zod v4) ----
@@ -299,7 +300,5 @@ export function sweepPack(jsonStr: string): SweepResult {
 }
 
 function sha256short(s: string): string {
-  // Simple sync hash (Node crypto)
-  const { createHash } = require("node:crypto") as typeof import("node:crypto");
   return createHash("sha256").update(s).digest("hex").slice(0, 8);
 }

@@ -28,7 +28,14 @@ export async function readLedgerTail(limit = 30): Promise<{
     const parsed: LedgerRow[] = [];
     for (const line of lines) {
       try {
-        parsed.push(JSON.parse(line) as LedgerRow);
+        const row = JSON.parse(line) as LedgerRow;
+        // FABLE5 fix: real ledger rows use `timestamp`, older samples use `ts`.
+        // Normalize: if row has `timestamp` but no `ts`, copy it so the UI (which
+        // reads row.ts) works with both formats.
+        if (row.timestamp && !row.ts) {
+          row.ts = row.timestamp;
+        }
+        parsed.push(row);
       } catch {
         // Skip malformed lines — ledger is append-only and may have partial tail writes.
       }
