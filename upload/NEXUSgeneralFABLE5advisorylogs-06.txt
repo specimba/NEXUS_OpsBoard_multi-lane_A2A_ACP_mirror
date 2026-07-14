@@ -1,0 +1,2114 @@
+I'll pick up the advisory-log session. First, let me ground myself in the prior log and the NEXUSlogs directory state.
+
+  Listed 2 directories
+
+Log 05 is ~2,500 lines, last touched this morning. Let me read it to reconstruct the session state.
+
+  Searched for 4 patterns, read 1 file, listed 1 directory
+
+The full approved plan spec lives in log-05 around lines 596–850. Let me read that block plus the moonlit plan's §1–§12 design, and check the dispatch folder listing.
+
+  Read 2 files
+
+  Searched for 1 pattern, read 1 file
+
+Evidence for the HERMES ladder (M2/M3/M4) recovered. Now the remaining post-week card evidence from the two advisories.
+
+  Searched for 1 pattern, read 1 file
+
+● Background command "List dispatch folder and locate moonlit plan file" completed (exit code 0)
+
+Background listing confirmed: dispatch folder holds only the evidence file. Before writing the HERMES ladder cards, let me match the conventions of the existing HERMES cards (NXM-020/022).
+
+  Read 1 file
+
+● Write(~\.claude\jobs\6e30788a\tmp\part1_tail.md)
+Wrote 514 lines to ..\..\..\..\..\.claude\jobs\6e30788a\tmp\part1_tail.md
+
+## TIER: POST-WEEK
+
+### CARD NXM-030 a800-m2-rift-ablation
+```
+MISSION:        NXM-030 a800-m2-rift-ablation
+EXECUTOR:       HERMES (WSL)
+REV:            1   VERIFIED-AS-OF: 2026-07-14   STALE-AFTER: 72h
+PRIORITY:       P2 — method selection for guard v2; runs only after M1 lands
+AUTHORITY:      CHARTER(D-004); mission ladder = evidence file SLM §1 (M2)
+… +717 lines
+
+Now truncating the corrupted tail and splicing in the completed Part 1:
+
+  Ran 1 shell command
+
+  Read 2 files, ran 2 shell commands
+
+● Write(~\.claude\jobs\6e30788a\tmp\part2_a.md)
+Wrote 164 lines to ..\..\..\..\..\.claude\jobs\6e30788a\tmp\part2_a.md
+
+
+**No lane may cite this section as authority.** It is written for the human operat
+or: the narrative, the state of the system, the mistakes, the ideas, and the hones
+ where it conflicts with Part 0, Part 0 wins. An agent that received this part rec
+eived context, not orders.
+---
+
+## §1 How to read this document
+Read order for the operator:
+… +346 lines
+
+Chunk 1 drafted (§1–§5). Now chunk 2 (§6 development ideas through §11 appendix):
+
+● Write(~\.claude\jobs\6e30788a\tmp\part2_b.md)
+Wrote 163 lines to ..\..\..\..\..\.claude\jobs\6e30788a\tmp\part2_b.md
+
+
+Ranked by (leverage × readiness) ÷ risk. Each idea names its card; the ranking is e
+
+ect value ask: routed executions must use the CLI-selected model, ModelOffer identi
+ty must be truthful, health semantics must mean something (`models_up=1` while rout
+27/033) assumes this identity layer is honest first.
+
+he arena as-is: "0 usefulness" (D-005). The recommendation on file: rebuild as a **
+CORED rows, and the task-conditioned cohorts (NXM-027's artifact) so choosing a
+… +373 lines
+
+  Ran 1 shell command
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 8 lines
+
+**Where that leaves the phase:** substrate ≈ done; the center of gravity is (a)
+ commit/consolidate (NXM-002 and everything AFTER it), (b) exposure cleanup — c
+redentials, binds, CDP governance (NXM-001/003/005/006), (c) making the substra
+te USEFUL: honest routing (NXM-007/027/033), a real training program (NXM-019→0
+22, 030–032), outward SAGE behind gates (NXM-016/026).
+
+### §3.1b The window, chronologically
+
+- **2026-07-10.** HEAD freezes at `1d87bafe` — the last commit the program will
+ see for four days. First CDP HARD_STOP breach: GROK45's autonomous A800 keepal
+ive loop is stopped and comes back [B].
+- **2026-07-11.** FABLE5 authors the 7-commit landing branch (Phase 0/L1/L2/L3,
+ all gates green) — and codex, working the same surfaces in parallel, independe
+ntly re-does and exceeds most of it within 48 hours; the branch is dead on arri
+val (nobody's fault; the anti-clobber warning was in force, the lanes simply ou
+tran each other). 14:02Z: codex performs the live relay cutover — :7350 now ser
+ves the repo-owned governed runtime [B]. The 07-11 "unfinished work" report shi
+ps and starts rotting immediately (§10.1).
+- **2026-07-11 → 07-13, the 30-hour surge.** Codex builds and hardens SAGE (~36
+h: package, nine hardening slices, 166→205 focused tests), fixes the synthetic-
+score fallbacks, applies the Hermes managed sync (keys structurally gone), reti
+res the duplicate MCP — all uncommitted; the dirty tree grows 78 → 169 entries
+[A]. Meanwhile: second HARD_STOP breach (07-12, PID 70800 killed by codex, rela
+unched by Grok [B]); kilo burns ~2.5h on permission thrash and its OCR install
+collaterally breaks the training stack (numpy/safetensors downgrades → unsloth/
+mergekit dead [B]); GLM52 runs its honest cleanup inventory; LEANlabs files its
+ review (catching others' false claims, shipping two of its own).
+- **2026-07-13.** The operator's goal-objective update (17:14) dictates the cha
+rter lines now transcribed as D-003 through D-009. Wave-1 advisory lands ~16:30
+; wave-2 ~20:30; the operator asks for one combined walkthrough/mission documen
+t — the ask this doc answers.
+- **2026-07-14.** Five recovered expert/grounding inputs are folded in; the pla
+n survives a 3-auditor critique (24 findings) and gets the operator's double co
+nfirmation; the first authoring session dies at hour ~4 mid-card (§10.4); a suc
+cessor session repairs and completes the doc, generates the packets, and runs t
+he adversarial verification pass the same day.
+
+### §3.2 Codex SOL/TERRA — the engine, and the bottleneck
+
+"SOL" and "TERRA" logs are the **same** codex run (`codex-sol-20260711T054648Z`
+) under GPT-5.6 Terra tiers — not competing lanes [B]. It is the program's only
+ fully repo-capable engine and did most of the substrate work. Its own final se
+lf-audit is honest: *"the requested operating outcome is NOT delivered… partial
+ delivery"* — and its open P0 list matches the author's independent findings ex
+actly (endorsed as the canonical solidity queue; those items are now cards NXM-
+006/007/009/016/021).
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 14 lines
+
+---
+
+### §4.4 SAGE — deep dive on the program's best organ
+
+What genuinely advanced (class B, test-gated, **all uncommitted** — every line
+of it rides on NXM-002):
+
+- SAGE promoted to a real package `nexus_os/sage_gateway/` (routes/edge/jobs/se
+curity) + `config/sage/` v3 instruction contract (7,763 of an 8,000-char budget
+) + `bridge/sage_governance.py` — a typed, deny-by-default NexusClaw handoff th
+at is deliberately dry-run-only for now.
+- Nine hardening slices: Brain loopback bind + pre-accept WS auth; obfuscated-s
+ecret DLP (full-width/zero-width/base64 variants); recursive model-card sanitiz
+ation; edge abuse controls (4 concurrent / 60 per 60s + Retry-After); 24h deter
+ministic job retention with a TOCTOU-hardened sweeper; launcher PID ownership;
+an instruction-contract regression gate. Focused suite 166 → **205 passing**.
+- Public repo `specimba/NEXUS_SAGE`, draft PR #1 (13 docs-only files, CodeRabbi
+t-approved) — blocked externally on the GitHub Actions **billing lock** (NXM-00
+1 step 3).
+
+The honest gaps — codex's own claim-audit ran "conditional fail," and the three
+ P1s became NXM-016's triple: the retention sweeper can target the wrong DB (`j
+obs.py:329` vs the launcher state dir, and a missing DB returns ok=true); the m
+odel-card sanitizer is weaker than advertised (`routes.py:303` forwards whole n
+ested objects; the verifier only checks the schema string); launcher PID ≠ list
+ener PID. Structurally: **no OAuth, no durable ingress — still ephemeral ngrok*
+*, which is exactly why publication sits behind OG-6's four gates and nothing e
+lse in this program is allowed to "just share it."
+
+Editorial note for the operator: SAGE's engineering discipline — claim-audits a
+gainst its own work, regression ceilings, deny-by-default posture — is the stan
+dard the rest of the program is being held to by this document. The discipline
+exists in one lane; Part 0 §0.7/§0.8 is how it becomes everyone's.
+
+---
+
+## §5 Mistakes ledger — the 12 categories, mapped to the 10 operational codes
+
+The taxonomy agents self-check against is Part 0 §0.7 (10 codes). Descriptively
+, the window's failures sort into **12 categories**; two of them fold into exis
+ting codes at enforcement time, so the operational list stays at 10. Format per
+ row: what it is → type specimen (lane, evidence) → detection signal → preventi
+on rule → who enforces.
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 14 lines
+
+---
+
+### §6.b Decision-gate briefs — the seven OGs, one paragraph each
+
+These are the operator's decisions. Each brief: the question, the context, the
+recommendation on file, and what your answer unblocks. Batch them: **OG-4 is ne
+eded on Day 1**; OG-1/OG-2/OG-3 by Days 2–3; OG-5/OG-6/OG-7 when convenient.
+
+- **OG-1 — 7356 rebuild direction.** Question: what should the arena become? Co
+ntext: your verdict, "0 usefulness"; the honest-score substrate now exists unde
+rneath it. Recommendation on file (wave-2): a **candidate chooser over honest d
+ata** — evidence-classed scores, UNSCORED shown as unscored, task-conditioned c
+ohorts once NXM-027 lands. Unblocks NXM-009. Cost of delay: low — nothing else
+depends on it, but every day it runs it renders a fake-score path (`dashboard.j
+s:74`).
+- **OG-2 — dashboard fusion, three sub-decisions.** (i) Convergence direction:
+port the recovered Command Center into the OpsBoard repo, or the reverse? (ii)
+Python-backend wiring: wire `nexus_os/` live, or ship with STUB fallback? (iii)
+ Priority: Layer-1 MVP first, or close preview gaps first? Recommendation on fi
+le (the z.ai lane's own, endorsed): port into OpsBoard; STUB fallback until cod
+ex lands host bridges; MVP first. Unblocks NXM-038 (the packet ships inert with
+out all three). Cost of delay: none structural — the lane just stays parked.
+- **OG-3 — guard_dpo_v1 license resolution.** Question: may the program train o
+n a dataset whose judge labels were authored via a provider whose license maps
+`unknown`? Context: the program's own family-consistency rule (NXM-028) indicts
+ the flagship dataset; this is a governance self-consistency test, and it is be
+ing surfaced instead of buried. Recommendation on file (SLM expert): record an
+explicit operator resolution in the job-card meta — either accept-with-rational
+e or reject-and-relabel — **before** M1 trains. Unblocks NXM-022. Cost of delay
+: blocks the entire training ladder above M0.
+- **OG-4 — vendoring doctrine.** Question: vendor
+drift gate. Unblocks NXM-002's relay slice — which is why this is the Day-1 dec
+ision. Cost of delay: the keystone card stalls.
+- **OG-5 — GLM52 cleanup approval (~14.6 GB).** Question: approve the deletion
+menu? Context: the inventory was honest and verified; the red line is `.nexus-w
+orktrees/` — two live scheduled tasks execute from it until NXM-005 repoints th
+em [A]. Recommendation: approve `tests_tmp/`, `.next/`, the 3 backup dirs (afte
+r codex commits), caches — hold `.nexus-worktrees/` until NXM-005 reports DONE.
+ Unblocks disk hygiene only. Cost of delay: none.
+- **OG-6 — SAGE publication.** Question: when may SAGE be shared? Context: firs
+t outward-facing surface; §4.4's gaps. The four gates (all, not any): OAuth + d
+urable storage; `/v1/program` sandbox-class re-audit; edge :17452 pentest pass;
+ ngrok up only during active sessions. Recommendation: hold publication until a
+ll four; the docs-only PR #1 can merge as soon as billing unlocks. Unblocks NXM
+-026's publication leg. Cost of delay: none — private operation continues.
+- **OG-7 — GROK45 re-arm ruling.** Question: does the lane ever come back? Cont
+ext: two HARD_STOP breaches; the mechanic is now understood and patched away fr
+om it (§8.3). Recommendation on file: keep parked; any re-arm goes through NXM-
+003's operator-token challenge, and the lane returns to CDP work only under the
+ lease. Unblocks nothing urgent — its scratch fleet is being salvaged without i
+t (NXM-025).
+
+---
+
+## §7 Responsibility — who owns what (RACI, with weaknesses stated)
+
+Format: **owns / never / queue now / weakness → mitigation / red lines.** The w
+rite-surface map (§0.4) is the enforceable version; this is the narrative.
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 18 lines
+
+---
+
+### §8.4 The scratch fleet, and the build sequence
+
+**Scratch fleet.** `Downloads\cdp_agent_scratch\intern_cdp\` holds ~280 files o
+f GROK45-era drivers — the proven conveyor (`intern_s4_a800_go.mjs`) tangled to
+gether with one-off experiments and `.bak` litter. The doctrine (NXM-025) is **
+adopt / rewrite / discard**, per file, as commits into `tools/` — never a bulk
+copy: the conveyor's send/screenshot core gets extracted into `cdp_core.mjs` (N
+XM-023) with the token-injection fix; the watchdog is superseded by the patched
+ lease enforcer; the rest is judged on whether anything names it as a consumer
+(invariant 11's GHOST-FRAMEWORK test applied retroactively).
+
+**Build sequence** (the CDP+OCR expert's 8-day shape, re-expressed as the cards
+' AFTER-chain):
+
+| Stage | Deliverable | Card |
+|---|---|---|
+| 1 | Lease v1 + HARD_STOP files + patched watchdog + enforcer, host-side (non-
+repo) | NXM-003 |
+| 2 | Same tooling into the repo: `cdp_lease.mjs`, rearm/stop CLI, `lease_enfor
+cer.ps1` | NXM-015 |
+| 3 | OCR venv + 4 code fixes + end-to-end ledger gate (`ocr_e2e_pass`) | NXM-0
+11 |
+| 4 | `cdp_core.mjs` extraction + thrash guards + action↔evidence audit trail;
+HERMES bridges via `/mnt/c` meanwhile | NXM-023 |
+| 5 | `cdp_relay.mjs` on :9226 (bearer, verbs) → HERMES switches to it | NXM-02
+4 |
+| 6 | Scratch-fleet promotion commits (adopt/rewrite/discard lists) | NXM-025 |
+| 7 | Trace capture rides on all of it | NXM-032 |
+
+---
+
+## §9 Training program — the ladder, the risks, what runs where
+
+### §9.1 Mission ladder (cards NXM-020/022/030/031/032)
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 8 lines
+
+---
+
+### §9.4 The benchmarking leg, and the SERA condition
+
+The guard mission is motivated by the program's own bench alarms, not fashion:
+functiongemma at 30% accuracy / 70% FPR and special-virus at 45%/55% FPR on the
+ guard benches [B] — a guard that flags most benign traffic while missing most
+attacks. The stress-test framework (`scripts/stress/nexus_guard_stress_test.py`
+) exists but has **never run** — running it becomes cheap once the M0 harness e
+xists, and its results feed the registry only as evidence-classed generator inp
+uts (invariant 2), never hand-pasted numbers.
+
+**SERA stays unscheduled by rule.** Every prior plan sequenced CDP-trace SFT fi
+rst while its capture path was a stub (the data-readiness inversion, §10.3). Th
+e standing condition, encoded in NXM-032: SERA gets a card only if M4 yields **
+≥500 trainable-partition traces** — and an M4 report of "SERA NOT SCHEDULABLE"
+is a success of the mission, not a failure. The program does not train on data
+it wishes it had.
+
+---
+
+## §10 Corrections history — what our own documents got wrong
+
+The program's documents are wrong in knowable ways; this section is the running
+ list. Each entry: what was claimed → what was true → what changed.
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 25 lines, removed 1 line
+
+---
+
+## §11 Appendix — evidence pointers
+## §11 Day-1 walkthrough — the operator's first two hours
+
+The board is the truth; this is the same content as a morning routine. Times ar
+e estimates.
+
+**Step 1 — Rotation + re-provisioning (NXM-001, ~60–90 min, do first).** Rotate
+, in this order: the GitHub PAT for `NEXUS_discovery_GPU` (the ~104-occurrence
+leak); the PAT named GLMfalltoken1 (z.ai log :548); the Browserless key (:786);
+ the SAGE-gateway bearer flagged compromised (:1123); the LongCat `ak_` key (li
+ve copy in `%USERPROFILE%\.modelrelay.json`); the Sakana `fish_` key; the HF_TO
+KEN in the scratch `.env.local`; the ngrok authtoken. Then the re-delivery legs
+ the card lists (notebook-side env — never cell source; WSL env file for HERMES
+) and the two accept/VOID rows (Browserless customer-ID URL, Drive link-sharing
+). Unlock GitHub Actions billing while you're in the GitHub UI. **Nothing HERME
+S-side works until re-provisioning is done — sequence it before any A800 ambiti
+on.**
+**Step 2 — Decide OG-4 (~5 min).** Vendor-as-truth is the recommendation on fil
+e. Codex's relay slice needs the answer.
+**Step 3 — Hand out packets (~15 min).** CODEX packet → its active session ("wo
+rk NXM-002; OG-4 = <your answer>"). One SONNET5-CLI session per card: first NXM
+-003 (kill-switch control plane), then NXM-021 (Hermes 401), then NXM-005 (supe
+rvisor repoint). Each session gets its packet pasted plus one line: "work NXM-0
+xx only."
+**Step 4 — Apply the kilo rebuild (NXM-004, ~15 min).** The card contains the c
+onfig text; you type it (kilo never edits its own config). KILO's packet become
+s usable afterward.
+**Step 5 — End of day (~15 min).** Collect `dispatch\reports\NXM-0xx_REPORT.md`
+, relay them to a FABLE5 session for board flips and REV bumps. NXM-006 (relay
+bind) dispatches to codex as soon as its relay slice is committed; LEANLABS's N
+XM-018 dispatches once the Day-1 reports exist.
+
+What you should refuse to do on Day 1: anything an agent asks approval for that
+ a D-line already grants (cite the line); any request to touch `.nexus-worktree
+s/` before NXM-005 reports DONE; any "quick" publication of anything (OG-6).
+
+## §12 The dispatch system — how deliverables move from this doc to agents
+
+**Why packets exist.** A 2,200-line document is for you; an agent that receives
+ all of it digs through forensics to find its three tasks — and demonstrably do
+esn't (§10.5). So the doc is mechanically split: **one packet per executor** =
+Part 0 verbatim (charter, board snapshot, write-surfaces, taxonomy, templates)
++ only that executor's cards + the permitted per-packet additions (repo path an
+d isolation rules for SONNET5-CLI; inlined evidence and OG-2 outcomes for GLM52
+, which cannot read host paths).
+
+**Integrity.** Every packet header carries the master doc's sha256 (first 12),
+DOC-VERSION, and generation timestamp. The agent's mandatory RECITATION echoes
+the hash back — a stale or hand-edited packet is detectable in the first messag
+e of the session. Packet board snapshots are **frozen at generation**; live sta
+tus is OPS's board, updated from reports.
+
+**The loop.** Dispatch (you paste a packet + "work NXM-0xx only") → RECITATION
+(agent proves it can fill every field from its packet alone; if not, it files D
+OC-DEFECT and stops) → execution under the card's gates → REPORT filed to `disp
+atch\reports\` (or returned as the final message, for lanes without filesystem
+reach — you relay those) → OPS intake (board flip, REV bump, new D-### transcri
+ption, next-card dispatch). One SONNET5-CLI session per card, always — session
+sprawl is how scope invasion happens.
+
+**When something goes wrong.** BLOCKED report → the agent has already moved to
+its next card; you decide whether to unblock (usually an OG or an elevation ste
+p). DOC-DEFECT → OPS fixes the doc, bumps DOC-VERSION, regenerates the affected
+ packet; agents never improvise around a defective order. Conflict with your li
+ve instruction → you win, and the agent files NEW-FACTS so the doc catches up.
+
+**Distribution order** lives in `dispatch\00_DISTRIBUTION_ORDER_2026-07-14.md`
+— including each packet's "actionable when" condition (HERMES inert until NXM-0
+21 + re-provisioning; GLM52 inert until OG-2; SONNET5-CLI repo cards inert unti
+l their slice-commit edges clear).
+
+## §13 Appendix — evidence pointers
+
+**Companion artifacts (canon, `Downloads\ARCHIVIST\`):**
+- `dispatch\00_DISTRIBUTION_ORDER_2026-07-14.md` — packet hand-out sequence + i
+nertness conditions.
+- `dispatch\EVIDENCE_RECOVERED_REPORTS_2026-07-14.md` — the five recovered repo
+rts verbatim (~875 lines): z.ai dashboard trawl §§1–9; HERMES survey §§1–7; wor
+kforce directive design §§1–6; SLM training program §§1–6 + misses; CDP+OCR arc
+hitecture §§1–6 + misses. HERMES path: `/mnt/c/Users/speci.000/Downloads/ARCHIV
+IST/dispatch/EVIDENCE_RECOVERED_REPORTS_2026-07-14.md`.
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+1. **Part 0 §0.2 mission board** — the whole program on one screen: 42 cards, 7
+ decision gates, 7 dispositions.
+2. **This part, §3–§4** — what happened and where the system stands, if you wan
+t the story behind the board.
+3. **The cover sheet** (`dispatch\00_DISTRIBUTION_ORDER_2026-07-14.md`) — which
+ packet to hand to which agent, in what order, and when a packet is inert.
+4. Everything else here is depth on demand: mistakes (§5), ideas (§6), responsi
+bilities (§7), architecture (§8), training (§9), corrections (§10), evidence (§
+11).
+4. Everything else here is depth on demand: mistakes (§5), ideas + decision bri
+efs (§6), responsibilities (§7), architecture (§8), training (§9), corrections
+(§10), the Day-1 walkthrough (§11), the dispatch system (§12), evidence (§13).
+
+You never paste this document into an agent session. Agents get their **dispatc
+h packet** (Part 0 + their cards, hash-stamped). The full doc is yours.
+
+
+Verifying Part 2 length and doc structure:
+
+  Ran 2 shell commands
+
+● Write(~\.claude\jobs\6e30788a\tmp\gen_packets.sh)
+Wrote 214 lines to ..\..\..\..\..\.claude\jobs\6e30788a\tmp\gen_packets.sh
+#!/usr/bin/env bash
+# Mechanical dispatch-packet generator for NEXUS-MISSION-DOC-2026-07-14.
+# Re-runnable: regenerates all 7 packets + cover sheet from the current master doc.
+set -euo pipefail
+cd "/c/Users/speci.000/Downloads/ARCHIVIST"
+F="NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md"
+D="dispatch"
+TMP="/tmp/nexus_packets"
+rm -rf "$TMP"; mkdir -p "$TMP/cards" "$D/reports"
+… +254 lines
+
+  Ran 2 shell commands
+
+● Workflow(Three adversarial auditors verify the NEXUS master mission doc + dispatch packets)
+/workflows to view dynamic workflow runs
+
+  Read 1 file
+
+The verification panel is running (three auditors: claim-vs-evidence with live probes of the repo/ledger/ports, consistency/dispatch-readiness across board↔cards↔packets, and a secret/leak regex sweep over everything that ships to agents). The ledger checkpoint format is captured and ready for the final step.
+
+Status so far: Part 1 completed (42 cards, corruption repaired), Part 2 written (862 lines, all required topics), 7 dispatch packets + cover sheet generated with hash stamps (master sha 302478e6e0a9). Waiting on the auditors before fixing findings, regenerating packets, and checkpointing.
+
+✻ Churned for 26m 6s
+
+● Dynamic workflow "Three adversarial auditors verify the NEXUS master mission doc + dispatch packets" completed · 12m 37s
+
+The audit panel is back: 3 agents, 62 tool calls, findings include two MAJOR factual defects (the "147/147 ledger" claim is stale — reality is 180/180; dirty tree drifted 169→170) plus consistency findings that were truncated. Reading the full findings file:
+
+  Ran 4 shell commands
+
+NXM-009's authority is nearly right already — needs only the pre-transcription fix. Pulling the remaining exact anchors:
+
+  Ran 1 shell command
+
+All anchors confirmed. Applying the full fix set to the master doc:
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+File must be read first
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+File must be read first
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+File must be read first
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+File must be read first
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+File must be read first
+
+The reflow via Bash invalidated the Edit tool's read state. Re-reading a slice to re-establish it:
+
+  Read 1 file
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+DOC-ID:          NEXUS-MISSION-DOC-2026-07-14
+DOC-VERSION:     1
+AUTHOR:          FABLE5 advisory/orchestration lane (acting as OPS)
+VERIFIED-AS-OF:  2026-07-14 01:24 +0300 · repo HEAD 1d87bafe · branch CODEX_SOLv1
+ · dirty tree = 169 entries · zero commits since 2026-07-12
+VERIFIED-AS-OF:  2026-07-14 07:20 +0300 (re-verified at ship) · repo HEAD 1d87baf
+e · branch CODEX_SOLv1 · dirty tree = 170 entries (169 at first stamp — the tree
+moves under the active codex lane; cards re-probe via PRECONDITIONS) · zero commi
+ts since 2026-07-12
+STALE-AFTER:     72h (after 2026-07-17 ~01:00 every state assertion in this doc d
+emotes to evidence class C;
+                 PRECONDITIONS stay valid because they are commands, not assertio
+ns)
+SUPERSEDES:      NEXUS_FABLE5_30H_GROUNDING_ADVISORY_2026-07-13.md §9 queue (orde
+ring only — its findings stand),
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+|---|---|---|
+| OPERATOR | anything, by hand | — |
+| FABLE5 (OPS) | `Downloads\ARCHIVIST\**` (docs, dispatch, reports intake), appe
+nd-only `Downloads\NEXUSlogs\NEXUScontinuity_runs.jsonl`, own `~/.claude` plans/
+memory | the repo (all of it); live services |
+| SONNET5-CLI | repo **only via a dedicated git worktree** (`git worktree add`)
+on a fresh branch per card; `%LOCALAPPDATA%\NEXUS\control\*`; WSL `~/.hermes/.en
+v` (NXM-021 only); `ARCHIVIST\dispatch\reports\*` | the codex-active checkout's
+working tree; main; any file in the 169-entry dirty set before its `AFTER:` slic
+e-commit edge clears; key values anywhere |
+| SONNET5-CLI | repo **only via a dedicated git worktree** (`git worktree add`)
+on a fresh branch per card (scheme `sonnet5/nxm-0xx`); `%LOCALAPPDATA%\NEXUS\con
+trol\*`; WSL `~/.hermes/.env` (NXM-021 only); per-card WSL venv dirs (NXM-012/NX
+M-041 only); `<REPO>\.venv_ocr` gitignored env dir + its pinned launcher (NXM-01
+1 only); scheduled-task definitions via the gated schtasks steps (NXM-005 only;
+elevation failure → OPERATOR-GATE); the named pointer/retire marker files under
+`Downloads\cdp_agent_scratch\intern_cdp\` (NXM-015/NXM-025 only); `ARCHIVIST\dis
+patch\reports\*` | the codex-active checkout's working tree; main; any file in t
+he dirty set (169–170 entries at stamp) before its `AFTER:` slice-commit edge cl
+ears; key values anywhere |
+| CODEX SOL/TERRA | its own checkout + branches (`nexus_os/`, `services/`, `scri
+pts/`, SAGE repos), `docs/` | `Downloads` canon; other lanes' uncommitted files
+(sentinel/, DeepSeek relay files); force-push |
+| HERMES (WSL) | WSL home (own config/state), remote `/home/mw/project/NEXUS_ses
+sion4/**` via sanctioned CDP verbs, `ARCHIVIST\dispatch\reports\*` via `/mnt/c`
+| raw CDP :9224; any key material; Windows repo tree |
+| GLM52 (z.ai) | its GitHub repos (`NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror`, `
+nexusalpha` per OG-2), its sandbox | host filesystem/services (it has no reach —
+ packet inlines its evidence) |
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+| FABLE5 (OPS) | `Downloads\ARCHIVIST\**` (docs, dispatch, reports intake), appe
+nd-only `Downloads\NEXUSlogs\NEXUScontinuity_runs.jsonl`, own `~/.claude` plans/
+memory | the repo (all of it); live services |
+| SONNET5-CLI | repo **only via a dedicated git worktree** (`git worktree add`)
+on a fresh branch per card (scheme `sonnet5/nxm-0xx`); `%LOCALAPPDATA%\NEXUS\con
+trol\*`; WSL `~/.hermes/.env` (NXM-021 only); per-card WSL venv dirs (NXM-012/NX
+M-041 only); `<REPO>\.venv_ocr` gitignored env dir + its pinned launcher (NXM-01
+1 only); scheduled-task definitions via the gated schtasks steps (NXM-005 only;
+elevation failure → OPERATOR-GATE); the named pointer/retire marker files under
+`Downloads\cdp_agent_scratch\intern_cdp\` (NXM-015/NXM-025 only); `ARCHIVIST\dis
+patch\reports\*` | the codex-active checkout's working tree; main; any file in t
+he dirty set (169–170 entries at stamp) before its `AFTER:` slice-commit edge cl
+ears; key values anywhere |
+| CODEX SOL/TERRA | its own checkout + branches (`nexus_os/`, `services/`, `scri
+pts/`, SAGE repos), `docs/` | `Downloads` canon; other lanes' uncommitted files
+(sentinel/, DeepSeek relay files); force-push |
+| HERMES (WSL) | WSL home (own config/state), remote `/home/mw/project/NEXUS_ses
+sion4/**` via sanctioned CDP verbs, `ARCHIVIST\dispatch\reports\*` via `/mnt/c`
+| raw CDP :9224; any key material; Windows repo tree |
+| HERMES (WSL) | WSL home (own config/state), remote `/home/mw/project/NEXUS_ses
+sion4/**` via sanctioned CDP verbs, `ARCHIVIST\dispatch\reports\*` via `/mnt/c`;
+ carve-outs: `datasets\finetune\guard_dpo_v1_1000.jsonl` (NXM-022 M1b output onl
+y, via `/mnt/c`), `D:\NEXUS_MODELS\loras\**` promotion copies (NXM-031 only, via
+ `/mnt/d`) | raw CDP :9224; any key material; Windows repo tree (except the two
+named carve-outs) |
+| GLM52 (z.ai) | its GitHub repos (`NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror`, `
+nexusalpha` per OG-2), its sandbox | host filesystem/services (it has no reach —
+ packet inlines its evidence) |
+| KILO | `ARCHIVIST\dispatch\reports\*` (analysis output only) | repo writes; it
+s own `kilo.jsonc`; any execution surface |
+| LEANLABS | `ARCHIVIST\dispatch\reports\*` | repo writes |
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+
+# PART 1 — MISSION CARDS (NORMATIVE)
+
+Cards use the fixed 18-field schema. A card missing a field is defective: file D
+OC-DEFECT, do not improvise. `<REPO>` = `C:\Users\speci.000\Documents\NEXUS`. Ev
+idence file = `C:\Users\speci.000\Downloads\ARCHIVIST\dispatch\EVIDENCE_RECOVERE
+D_REPORTS_2026-07-14.md` (from WSL: `/mnt/c/Users/speci.000/Downloads/ARCHIVIST/
+dispatch/EVIDENCE_RECOVERED_REPORTS_2026-07-14.md`).
+Cards use the fixed 18-field schema. A card missing a field is defective: file D
+OC-DEFECT, do not improvise. Exception: OPERATOR-executed cards (NXM-001/004/008
+) may omit WRITE-SURFACE/AFTER/PRECONDITIONS — the operator's §0.4 row is "anyth
+ing, by hand" and no agent recites them. `<REPO>` = `C:\Users\speci.000\Document
+s\NEXUS`. Evidence file = `C:\Users\speci.000\Downloads\ARCHIVIST\dispatch\EVIDE
+NCE_RECOVERED_REPORTS_2026-07-14.md` (from WSL: `/mnt/c/Users/speci.000/Download
+s/ARCHIVIST/dispatch/EVIDENCE_RECOVERED_REPORTS_2026-07-14.md`).
+
+## TIER: DAY 1
+
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+EXECUTOR:       CODEX (SOL/TERRA)
+REV:            1   VERIFIED-AS-OF: 2026-07-14   STALE-AFTER: 72h
+PRIORITY:       P1
+AUTHORITY:      CHARTER(D-005) for honesty fixes; direction per OG-1/D-013 (NXM-
+008).
+AUTHORITY:      CHARTER(D-005) for honesty fixes; OPERATOR-GATE(OG-1) — its outc
+ome is transcribed
+                as D-013 by NXM-008 G2 (D-013 does not exist until then; precond
+ition 1 probes for it).
+OBJECTIVE:      7356 is rebuilt per the recorded direction, renders zero fabrica
+ted/synthetic scores
+                anywhere operator-visible, and its data provenance is explicit p
+er panel.
+NON-GOALS:      - GLM52's fusion dashboards stay in GLM52's own repos (OG-2 / NX
+M-038) — the HOST 7356
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 3 lines, removed 3 lines
+| NXM-019 | a800-package-organ-rewrite | SONNET5-CLI | P1 | Days 4–7 | TODO | NXM
+-002 (nexus_os/a800) |
+| NXM-020 | a800-m0-frozen-baseline | HERMES | P1 | Days 4–7 | TODO | NXM-021, NX
+M-001, NXM-019 |
+| NXM-022 | a800-m1-guard-dpo + m1b-pairs | HERMES | P1 | Days 4–7 | TODO | NXM-0
+20, OG-3 |
+| NXM-023 | cdp-core-extraction | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-015 |
+| NXM-024 | cdp-relay-9226 | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-023 · firew
+all = OPERATOR-GATE |
+| NXM-025 | scratch-fleet-promotion | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-02
+3 |
+| NXM-023 | cdp-core-extraction | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-015, N
+XM-002 (tools/) |
+| NXM-024 | cdp-relay-9226 | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-023, NXM-00
+2 (tools/) · firewall = OPERATOR-GATE |
+| NXM-025 | scratch-fleet-promotion | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-02
+3, NXM-002 (tools/) |
+| NXM-026 | sage-knowledge-pack-and-pr1 | CODEX | P1 | Days 4–7 | TODO | NXM-016,
+ OG-6, NXM-001 (billing) |
+| NXM-027 | arena-gmr-wiring + multi-benchmark-scoring | CODEX | P1 | Days 4–7 |
+TODO | NXM-002, NXM-007 |
+| NXM-028 | catalogue-reconciliation + license-re-audit | CODEX | P1 | Days 4–7 |
+ TODO | NXM-002 |
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+| NXM-031 | a800-m3-guard-v2-1000 | HERMES | P2 | Post-week | TODO | NXM-030 |
+| NXM-032 | a800-m4-trace-capture-mvp | HERMES | P2 | Post-week | TODO | NXM-015,
+ NXM-011 |
+| NXM-033 | trust-ledger-to-routing | CODEX | P2 | Post-week | TODO | NXM-027 |
+| NXM-034 | boot-order-supervisor + backup-restore-drill | SONNET5-CLI | P2 | Pos
+t-week | TODO | NXM-002 |
+| NXM-034 | boot-order-supervisor + backup-restore-drill | SONNET5-CLI | P2 | Pos
+t-week | TODO | NXM-002, NXM-005 |
+| NXM-035 | statemanager-bind-fix | SONNET5-CLI | P2 | Post-week | TODO | NXM-002
+ |
+| NXM-036 | grounding-hang + ledger-typed-reader | SONNET5-CLI | P2 | Post-week |
+ TODO | NXM-002 |
+| NXM-037 | full-suite-remediation | SONNET5-CLI | P2 | Post-week | TODO | NXM-00
+2, NXM-010 |
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+NON-GOALS:      - No relay (NXM-024). - No fleet-wide scratch adoption (NXM-025
+). - No OCR service
+                changes (NXM-011 owns that surface).
+WRITE-SURFACE:  Repo via dedicated worktree, branch sonnet5/nxm-023: tools/brow
+ser_ai_supervisor/**.
+AFTER:          NXM-015 (lease module exists — core lib imports it).
+AFTER:          NXM-015 (lease module exists — core lib imports it), NXM-002 (t
+ools/ slice committed).
+PRECONDITIONS:
+  1. RUN: Test-Path <REPO>\tools\browser_ai_supervisor\cdp_lease.mjs      EXPEC
+T: True
+STEPS:
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+                0.0.0.0 bind; no raw CDP method pass-through endpoint. No HERME
+S-side changes here.
+WRITE-SURFACE:  Repo via dedicated worktree, branch sonnet5/nxm-024: tools/cdp_
+relay/**;
+                token file at %LOCALAPPDATA%\NEXUS\control\cdp_relay.token (nev
+er in repo).
+AFTER:          NXM-023 (core lib).
+AFTER:          NXM-023 (core lib), NXM-002 (tools/ slice committed).
+PRECONDITIONS:
+  1. RUN: Test-Path <REPO>\tools\browser_ai_supervisor\cdp_core.mjs       EXPEC
+T: True
+STEPS:
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+                semantics). - Never commit any *_result.json/console dumps (arc
+hive to ARCHIVIST if wanted).
+WRITE-SURFACE:  Repo via dedicated worktree, branch sonnet5/nxm-025: tools/a800
+_conveyor/**,
+                docs/governance/, docs/operations/; PLUS the scratch dir's poin
+ter/retire marker file.
+AFTER:          NXM-023 (core exists — transport legs land there, not re-duplic
+ated).
+AFTER:          NXM-023 (core exists — transport legs land there, not re-duplic
+ated), NXM-002 (tools/ slice committed).
+PRECONDITIONS:
+  1. RUN: Test-Path C:\Users\speci.000\Downloads\cdp_agent_scratch\intern_cdp\i
+ntern_s4_a800_go.mjs
+     EXPECT: True
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+                repair is demoted to NXM-041 (post-week, VOID-able).
+NON-GOALS:      - Do not "fix" the paddle-poisoned main env (quarantine it, do n
+ot delete it).
+                - No training runs (HERMES lane), no dataset content changes.
+WRITE-SURFACE:  WSL: a new venv dir (e.g. ~/venvs/nexus-tooling) + nothing else;
+ zero repo files.
+WRITE-SURFACE:  WSL: a new venv dir (e.g. ~/venvs/nexus-tooling) plus one QUARAN
+TINED-ENV.txt marker
+                beside the poisoned env (path recorded in REPORT); zero repo fil
+es.
+AFTER:          NONE
+PRECONDITIONS:
+  1. RUN: wsl -d Ubuntu -- true                                             EXPE
+CT: exit 0
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 3 lines, removed 1 line
+NON-GOALS:      - No method re-litigation (NXM-030's verdict stands unless its
+gates failed).
+                - No holdout changes, ever. - No full-model saves.
+WRITE-SURFACE:  Remote experiments dir + proof repo (as NXM-020); promotion cop
+y to
+                D:\NEXUS_MODELS\loras\ via /mnt/c; ARCHIVIST\dispatch\reports\*
+.
+                D:\NEXUS_MODELS\loras\ via /mnt/d (verify the D: mount exists i
+n the distro first;
+                if absent, file DOC-DEFECT and hand promotion to a Windows-side
+ session);
+                ARCHIVIST\dispatch\reports\*.
+AFTER:          NXM-030 (comparison verdict on record).
+PRECONDITIONS:
+  1. RUN: wc -l guard_dpo_v1_1000.jsonl (local, NXM-022 M1b output)      EXPECT
+: ~1000, license
+
+Batch 3 — need the exact post-reflow text around the §13 ledger passage first:
+
+  Ran 1 shell command
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 5 lines, removed 2 lines
+diagnosis K1–K5, OCR/collateral, codex C1–C5, queue.
+
+**Ledger** (`Downloads\NEXUSlogs\NEXUScontinuity_runs.jsonl`, append-only): las
+t checkpoint before
+this doc = `fable5-20260713-wave2`; this doc's checkpoint = `fable5-20260714-ma
+sterdoc`. Ledger
+parse health: 147/147 rows [B]; one known corrupt line is NXM-036's regression
+fixture.
+this doc = `fable5-20260713-wave2`; this doc's checkpoint = `fable5-20260714-ma
+sterdoc` (appended by
+OPS at ship time). Ledger health re-measured at ship (2026-07-14 ~07:20): 180 r
+ows, 180/180
+JSON-valid [A] — wave-1's "147/147" was the count at its own stamp time. Schema
+-invalid rows (null
+run_id/timestamp_utc on `plan_phase` / `modelrelay_shadow_milestone` kinds) do
+exist and are
+NXM-036's regression fixtures; "corrupt" there means typed-schema-invalid, not
+unparseable.
+
+**Primary log citations used above (file + line/offset only, no values):** GROK
+45 log-07 (~offset
+20,386 onward: PAT occurrences; `buildPreamble()` at intern_s4_a800_go.mjs:104-
+114); z.ai dashboard
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 4 lines, removed 2 lines
+     (record wall time; if it completes, file NEW-FACTS and re-scope to the rea
+der half).
+STEPS:
+  1. Diagnose + fix the --changed-only hang; add a hard timeout with diagnostic
+ output as backstop.
+  2. Typed reader: valid/corrupt row counters; 0-valid ⇒ non-zero exit + explic
+it error; the 1 known
+     corrupt ledger line becomes the regression fixture.
+  2. Typed reader: valid/invalid row counters; 0-valid ⇒ non-zero exit + explic
+it error. Fixtures:
+     the live ledger's schema-invalid rows (null run_id/timestamp_utc on plan_p
+hase /
+     modelrelay_shadow_milestone kinds — all 180 lines are JSON-parseable, so "
+corrupt" here means
+     typed-schema-invalid) plus G3's deliberately unparseable fixture.
+  3. Tests for both.
+GATE:
+  G1. RUN: grounding scan --changed-only                                  EXPEC
+T: completes < 30s
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 2 lines
+| Training/data governance | **D** | fake eval stub, license hole, no lineage t
+ooling [B] | B — sealed holdout, lineage validated, license resolved | NXM-019/
+020/022, OG-3 |
+| Process discipline | **D** | approval loops, thrash, ghost frameworks (§5) |
+B — taxonomy self-check + REPORT protocol enforced | Part 0 §0.7/§0.8 |
+| CDP governance | **F** | two HARD_STOP breaches; watchdog bug unpatched [B] |
+ A on the control plane — lease v1, ≤40s stop, operator-token re-arm | NXM-003/
+015/023/024 |
+| Observability/honesty substrate | **B** | ledger 147/147, grounding 11.5s, UN
+SCORED renders [B] | A — consumers wired (routing, GMR), reader defects fixed |
+ NXM-027/033/036 |
+| Observability/honesty substrate | **B** | ledger 180/180 (re-measured at ship
+; 147/147 at wave-1), grounding 11.5s, UNSCORED renders [B] | A — consumers wir
+ed (routing, GMR), reader defects fixed | NXM-027/033/036 |
+| Documentation-as-orders | **C** | two advisories, neither executed | A — this
+ doc: cards + packets + recitation/report loop | this doc, NXM-042 |
+
+---
+
+durable storage, `/v1/program` sandbox re-audit, edge pentest, session-only tun
+nel — all four before
+any share. The knowledge pack itself (public-safe subset) is buildable now.
+
+**7. Trust-ledger → routing (NXM-033).** The honesty substrate has producers (l
+edger 147/147,
+**7. Trust-ledger → routing (NXM-033).** The honesty substrate has producers (l
+edger 180/180 (re-measured at ship; 147/147 at wave-1),
+grounding 11.5s); what's missing is consumption. Bounded posteriors on top of b
+enchmark priors —
+never overwriting them — is the smallest honest step. Wave-1 §4.8's rule stands
+: wire consumers
+before adding producers.
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+litter. The doctrine (NXM-025) is **adopt / rewrite / discard**, per file, as c
+ommits into `tools/`
+— never a bulk copy: the conveyor's send/screenshot core gets extracted into `c
+dp_core.mjs`
+(NXM-023) with the token-injection fix; the watchdog is superseded by the patch
+ed lease enforcer;
+the rest is judged on whether anything names it as a consumer (invariant 11's G
+HOST-FRAMEWORK test
+the rest is judged on whether anything names it as a consumer (§0.7's GHOST-FRA
+MEWORK test
+applied retroactively).
+
+**Build sequence** (the CDP+OCR expert's 8-day shape, re-expressed as the cards
+' AFTER-chain):
+
+  Ran 1 shell command
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 2 lines
+session for this doc ran ~4h and died mid-write at NXM-030, leaving a duplicate
+d,
+mid-field-truncated card stub at the file tail; a successor session excised the
+ corruption and
+completed Parts 1–2 in chunked, tail-verified writes. Lesson encoded in §7's FA
+BLE5 row. (3) **Count
+honesty:** "~30 cards" in the approved plan became **42 board rows** (28 full m
+ission cards +
+operator/decision/deferred/stub rows) once every merged queue item got a row or
+ a disposition — the
+honesty:** "~30 cards" in the approved plan became **42 board rows** (38 agent
+mission cards + 3
+operator cards + 1 deferred stub) once every merged queue item got a row or a d
+isposition — the
+plan's count was an estimate, the board is the truth. (4) The prior plan (moonl
+it-popping-heron) was
+rejected twice for structural reasons (§10.5) — the rejection pattern, not the
+content, drove this
+document's shape.
+
+  Ran 1 shell command
+
+● Update(~\.claude\jobs\6e30788a\tmp\gen_packets.sh)
+Added 1 line, removed 1 line
+ADD_SONNET=$(cat <<'EOT'
+**SONNET5-CLI additions (normative for you):**
+- Repo path: `C:\Users\speci.000\Documents\NEXUS`. You NEVER work in that checko
+ut directly.
+- Isolation rule: every repo card runs in a dedicated worktree — `git -C C:\User
+s\speci.000\Documents\NEXUS worktree add .claude/worktrees/<card-id> -b nxm/<car
+d-id>` — fresh branch per card, never main, commit on every green gate. Non-repo
+ cards (NXM-003 control plane, NXM-021 WSL env) touch no repo files at all.
+- Isolation rule: every repo card runs in a dedicated worktree — `git -C C:\User
+s\speci.000\Documents\NEXUS worktree add .claude/worktrees/nxm-0xx -b sonnet5/nx
+m-0xx` (the `sonnet5/nxm-0xx` branch scheme your cards name) — fresh branch per
+card, never main, commit on every green gate. Non-repo cards (NXM-003 control pl
+ane, NXM-021 WSL env; plus the named non-repo surfaces §0.4 grants you per card)
+ touch no repo files at all.
+- One session = one named card. The operator opens you with "work NXM-0xx only";
+ anything else you notice goes in NEW-FACTS, not your diff.
+- Evidence file (file:line proof for your cards): `C:\Users\speci.000\Downloads\
+ARCHIVIST\dispatch\EVIDENCE_RECOVERED_REPORTS_2026-07-14.md`.
+EOT
+
+All 15 findings fixed. Regenerating packets with the new hash and re-scanning the edited surfaces:
+
+  Ran 1 shell command
+
+The re-scan flagged 3 files — inspecting the actual matches:
+
+  Ran 2 shell commands
+
+  Ran 1 shell command
+
+Ledger checkpoint appended — 181/181 JSON-valid. Now the memory updates:
+
+  Recalled 2 memories, wrote 3 memories
+
+Memory index updated. Final sanity check across the whole deliverable set:
+
+  Ran 1 shell command
+
+The interrupted master-doc session is finished end-to-end. Sanity check at ship: 42/42 cards, Parts 0/1/2 all present (2,762 lines; Part 2 = 865 lines, above the 600 floor), master sha e775387d0f40 matches every packet stamp, dispatch folder complete, ledger checkpoint appended (181/181 valid rows).
+
+What was picked up and delivered:
+
+1. Part 1 repaired and completed. The previous 4-hour session died mid-write at NXM-030, leaving a duplicated truncated card stub. I excised the corruption and wrote the 13 remaining cards (NXM-030→042: HERMES training ladder M2/M3/M4, trust-ledger→routing, boot-order + restore drill, statemanager bind fix, grounding-hang/typed-reader, full-suite triage, dashboard fusion, kilo standing monitoring, writer-fence test, the deferred unsloth stub, FABLE5 prompt refresh) plus the QUARANTINED plans table.
+2. Part 2 walkthrough written (§1–§13): timeline + per-lane narrative, services/ports table, solidity scorecard, the 12-category mistakes ledger mapped to the 10 codes, ranked development ideas + one-paragraph briefs for all 7 operator decision gates, RACI with the operator-minutes budget, the 11 invariants + CDP/OCR blast-radius summary, training program, corrections history (including this doc's own failures), a Day-1 operator walkthrough, and how the dispatch system works.
+3. Dispatch system generated: ARCHIVIST\dispatch\ now holds the cover sheet (hand-out order + inertness conditions), the redacted evidence file, and 7 hash-stamped packets (OPERATOR, CODEX, SONNET5-CLI, HERMES, GLM52, KILO, LEANLABS) — each Part 0 verbatim + only that agent's cards. The generator script is saved, so packet regeneration after any doc edit is one command.
+4. Adversarial verification ran and was acted on: a 3-auditor workflow (claim-vs-evidence with live probes, consistency/dispatch-readiness, secret/leak scan) returned 5 MAJOR + 10 MINOR findings — the notable ones: a Browserless customer-ID value shipping verbatim in the GLM52 packet (redacted), a false "147/147 ledger" claim (reality: 180/180 — corrected in 3 places), NXM-022 ordering HERMES to write inside its own hard exclusion (carve-out added to §0.4), seven cards with surfaces missing from the write-surface map (map extended), a nonexistent D-013 citation, and a /mnt/c-vs-D: path error. All 15 fixed, packets regenerated under the new sha, re-scan clean.
+5. Closed out: ledger checkpoint fable5-20260714-masterdoc appended; memory updated (new master-doc/dispatch entry, 30h-grounding queue marked superseded, moonlit plan marked fully superseded).
+
+Your Day-1 actions (detailed in Part 2 §11): rotate the 8-item credential queue + unlock GH Actions billing (NXM-001), decide OG-4 vendoring (recommendation: vendor-as-truth), hand the CODEX packet to its session, open SONNET5-CLI sessions one card at a time (NXM-003 → 021 → 005), apply the kilo config rebuild (NXM-004), and collect the evening's reports into dispatch\reports\ for board flips.
+
+result: Master mission doc v1 completed (42 cards + 865-line walkthrough, prior session's corruption repaired) and 7 hash-stamped dispatch packets shipped to ARCHIVIST\dispatch\ — 3-auditor verification run, all 15 findings fixed, ledger checkpointed as fable5-20260714-masterdoc.
+
+✻ Sautéed for 1h 0m 23s
+
+❯ " rotate the 8-item credential queue + unlock GH Actions billing (NXM-001), " first, we do not need rotations of keys, second I will not make payment to that s. GH so find better way or workarounds or complete change that workplan section.
+
+Understood — two operator rulings to fold in: no key rotations at all (exposed keys stay live as accepted risk; containment must be structural, not replacement) and no payments to GitHub (the SAGE PR-#1 path must not depend on the Actions billing unlock). This rewrites NXM-001, changes NXM-026's unblock path, and needs CHARTER transcription so no agent ever re-asks. Let me pull the current NXM-001/NXM-026 cards and every rotation/billing mention:
+
+  Read 1 file, ran 1 shell command
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 39 lines, removed 25 lines
+
+## TIER: DAY 1
+
+### CARD NXM-001 rotate-and-reprovision-credentials
+### CARD NXM-001 credential-containment-and-accepted-risk  (REV 2 — recut per D-
+014; rotation VOID)
+```
+MISSION:        NXM-001 rotate-and-reprovision-credentials
+MISSION:        NXM-001 credential-containment-and-accepted-risk
+EXECUTOR:       OPERATOR
+REV:            1   VERIFIED-AS-OF: 2026-07-14   STALE-AFTER: 72h
+REV:            2   VERIFIED-AS-OF: 2026-07-14   STALE-AFTER: 72h
+PRIORITY:       P0
+AUTHORITY:      OPERATOR-only by definition (D-001 forbids every agent from touc
+hing keys)
+OBJECTIVE:      Every credential on the exposure list below is rotated, its old
+value revoked,
+                and the NEW values are re-delivered to their named consumers so
+nothing downstream bricks.
+NON-GOALS:      - Do not rotate the ~18 live relay provider keys wholesale (D-00
+1: they are the routing substrate;
+                  only the LISTED exposed items rotate).
+                - Do not paste any new value into any chat, log, or repo file.
+ROTATION LIST (locations cited file+line only — this is the rotation SUBSET, not
+ a claim of completeness):
+AUTHORITY:      OPERATOR-only by definition; D-014 (no rotations — exposures are
+ operator-accepted
+                risk, containment is structural only); D-015 (no GitHub payments
+).
+OBJECTIVE:      Every credential on the exposure register below gets ONE recorde
+d decision:
+                CONTAINED (delivery moved to ACL'd file/env plumbing; at-rest pl
+aintext copies
+                redacted/relocated — the key VALUE untouched at the provider) or
+ ACCEPTED (stays
+                exactly as-is, risk owned) or VOID (not actually an exposure). N
+o value changes
+                anywhere; nothing downstream re-keys or bricks.
+NON-GOALS:      - No rotation, revocation, creation, or refactor of ANY key (D-0
+01 + D-014).
+                - No payments to GitHub or any provider (D-015). NXM-026 no long
+er waits on billing.
+                - Do not paste any credential value into any chat, log, or repo
+file.
+EXPOSURE REGISTER (locations cited file+line only — not a claim of completeness)
+:
+  1. GitHub PAT for specimba/NEXUS_discovery_GPU — re-leaked in NEXUSbuildubuntu
+GROK45 log-07 command lines.
+  2. GitHub fine-grained PAT "GLMfalltoken1" (36 repo + 19 account perms) — NEXU
+SdashboardA2AmirrorGLM52zailogs-01.txt:548.
+  3. Browserless API key — NEXUSdashboardA2AmirrorGLM52zailogs-01.txt:786.
+
+  Accept-or-VOID rows (not secrets, operator judgment): Browserless MCP URL w/ c
+ustomer userId (zai log :860);
+  Drive folders "anyone with link can edit" (zai log :645/:735/:1105/:1165).
+STEPS:
+  1. Rotate items 1-8 at their providers; revoke old values.
+  2. RE-PROVISION (the half every prior plan forgot):
+     a. New GH PAT + HF token → A800 notebook-side environment (Intern workbench
+ env/secret store),
+  1. Scope-verify in place (free, no value change): in GitHub settings confirm i
+tems 1-2 are
+     fine-grained and scoped to their single repos; record scopes in the decisio
+n row. NARROWING an
+     over-broad scope is allowed (not a rotation — the value survives).
+  2. STRUCTURAL DELIVERY (the half every prior plan forgot; existing values, bet
+ter plumbing):
+     a. GH PAT + HF token → A800 notebook-side environment (Intern workbench env
+/secret store),
+        NEVER notebook cell source (SECRET-INLINE channel: buildPreamble() injec
+tion — see evidence file, CDP+OCR §6.4).
+     b. Confirm C:\Users\speci.000\.nexus\secrets\modelrelay_bearer.token still
+exists and is the live relay bearer
+        (NXM-021 reads it; if you rotate the relay bearer too, update this file
+in the same sitting).
+     c. Update %USERPROFILE%\.modelrelay.json entries you rotated.
+  3. Unlock GitHub Actions billing on specimba/NEXUS_SAGE (blocks NXM-026's PR #
+1).
+        (NXM-021 reads it as-is).
+     c. %USERPROFILE%\.modelrelay.json: no edits (values stay).
+  3. AT-REST REDACTION (documents lose the values; providers keep the keys): red
+act/quarantine the
+     plaintext copies in the ARCHIVIST curation guides + raw-config archive (ite
+ms 7-8); move
+     Downloads\cdp_agent_scratch\intern_cdp\.env.local to an ACL'd location outs
+ide the scratch dir
+     (item 5; NXM-025's leak-scan gate keeps future scratch promotions clean).
+  4. ABUSE TRIPWIRES (the safety net that replaces revocation): GitHub security
+log + PAT last-used
+     check for items 1-2; usage-dashboard glance for Browserless/ngrok/HF. An an
+omaly on any
+     accepted item is the D-014 re-evaluation trigger — file it to OPS as NEW-FA
+CTS.
+GATE:
+  G1. Old NEXUS_discovery_GPU PAT is dead:
+      RUN:  curl.exe -s -o NUL -w "%{http_code}" -H "Authorization: Bearer <OLD-
+PAT>" https://api.github.com/user
+      EXPECT: 401
+  G2. Notebook proof-push still works with the NEW token (run inside the workben
+ch once): git push → success.
+  G3. Type "confirmed: rotation list processed, items VOIDed listed" into the FA
+BLE5/OPS session.
+EVIDENCE:       A on G1/G2 (operator-run, outputs kept out of logs beyond status
+ codes).
+RED-LINES:      New values never appear in chat, repo, ledger, or ARCHIVIST.
+  G1. Decision register complete: every register item carries CONTAINED / ACCEPT
+ED / VOID + one line
+      of rationale                                                        EXPECT
+: 0 undecided rows.
+  G2. At-rest sweep: RUN: Select-String over the named ARCHIVIST guide/archive f
+iles + .env.local
+      old location for the leaked value patterns                          EXPECT
+: zero live values remain
+      in documents (provider-side keys intentionally untouched).
+  G3. Type "confirmed: exposure register processed, decisions recorded" into the
+ FABLE5/OPS session.
+EVIDENCE:       A on G1/G2 (operator-run; outputs kept out of logs beyond counts
+/status codes).
+RED-LINES:      No credential value changes anywhere (D-014); no values in chat,
+ repo, ledger, or
+                ARCHIVIST; no GitHub payments (D-015).
+ON-BLOCK:       Items you choose to defer get an explicit DEFERRED row with date
+ — no silent skips.
+DONE:           [ ] items 1-8 rotated+revoked  [ ] 2a/2b/2c re-provisioned  [ ]
+billing unlocked  [ ] G1/G2 pass
+HANDOFF:        OPS. Unblocks NXM-020/022 (A800 proof pushes), NXM-026 (billing)
+, and keeps NXM-021 alive (2b).
+DONE:           [ ] register decisions 1-8 recorded  [ ] 2a/2b delivered  [ ] st
+ep-3 redactions swept  [ ] G1-G3 pass
+HANDOFF:        OPS. Unblocks NXM-020/022 (A800 proof pushes via the delivered t
+okens) and keeps NXM-021 alive (2b).
+```
+
+### CARD NXM-002 slice-commit-the-dirty-tree
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 3 lines
+- **D-010** (2026-07-14, this session): FABLE5 plans, orchestrates workflows, an
+d verifies — it never implements code. Claude-CLI code implementation = SONNET5-
+CLI sessions, one named card per session. OPS role = FABLE5.
+- **D-011** (2026-07-13): CDP HARD_STOP is inviolable. Re-arm is operator-only v
+ia the challenge protocol (NXM-003). Auto-restarting a stopped controller is KIL
+L-SWITCH-DEFIANCE regardless of intent.
+- **D-012** (2026-06-29, canon): `Downloads\NEXUSlogs` + `Downloads\ARCHIVIST` a
+re the canonical truth locations; `NEXUScontinuity_runs.jsonl` is the cross-lane
+ audit spine. Prefer filesystem state over chat memory.
+- **D-013**: RESERVED — will hold the OG-1 outcome (7356 direction), transcribed
+ by NXM-008 G2.
+- **D-014** (2026-07-14, operator verbal): **NO credential rotations — period.**
+ Exposed credentials stay live as operator-ACCEPTED RISK, recorded per item in N
+XM-001's register. Containment is structural only: delivery plumbing, at-rest re
+daction, scope narrowing, abuse tripwires — never key replacement or revocation.
+ Supersedes every "rotate" recommendation in prior advisories and in Part 2's na
+rrative.
+- **D-015** (2026-07-14, operator verbal): **NO payments to GitHub.** Nothing in
+ this program may depend on paid GH features (Actions billing unlock, paid minut
+es, paid seats). Sanctioned paths: public-repo free tier, local gates with class
+-A output pasted in REPORTs, disabling Actions/required checks where they block,
+ and (future, own card) a self-hosted runner. Asking the operator to pay is an A
+PPROVAL-BEG-class violation.
+
+## 0.4 Write-surface map
+
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+
+```
+DOC-ID:          NEXUS-MISSION-DOC-2026-07-14
+DOC-VERSION:     1
+DOC-VERSION:     2 (v2 2026-07-14: operator rulings transcribed as D-014 no-rotati
+ons + D-015 no-GH-payments;
+                 NXM-001 recut to REV 2 containment/accepted-risk; NXM-026 reroute
+d off the billing dependency)
+AUTHOR:          FABLE5 advisory/orchestration lane (acting as OPS)
+VERIFIED-AS-OF:  2026-07-14 07:20 +0300 (re-verified at ship) · repo HEAD 1d87bafe
+ · branch CODEX_SOLv1 · dirty tree = 170 entries (169 at first stamp — the tree mo
+ves under the active codex lane; cards re-probe via PRECONDITIONS) · zero commits
+since 2026-07-12
+STALE-AFTER:     72h (after 2026-07-17 ~01:00 every state assertion in this doc de
+motes to evidence class C;
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+
+| id | slug | executor | pri | tier | status | AFTER |
+|---|---|---|---|---|---|---|
+| NXM-001 | rotate-and-reprovision-credentials | OPERATOR | P0 | Day 1 | TODO | —
+ |
+| NXM-001 | credential-containment-and-accepted-risk (REV 2) | OPERATOR | P0 | Da
+y 1 | TODO | — |
+| NXM-002 | slice-commit-the-dirty-tree | CODEX | P0 | Day 1 | TODO | OG-4 (relay
+ slice only) |
+| NXM-003 | cdp-killswitch-control-plane | SONNET5-CLI | P0 | Day 1 | TODO | — |
+| NXM-004 | kilo-config-clean-rebuild | OPERATOR | P0 | Day 1 | TODO | — |
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+| NXM-023 | cdp-core-extraction | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-015, N
+XM-002 (tools/) |
+| NXM-024 | cdp-relay-9226 | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-023, NXM-00
+2 (tools/) · firewall = OPERATOR-GATE |
+| NXM-025 | scratch-fleet-promotion | SONNET5-CLI | P2 | Days 4–7 | TODO | NXM-02
+3, NXM-002 (tools/) |
+| NXM-026 | sage-knowledge-pack-and-pr1 | CODEX | P1 | Days 4–7 | TODO | NXM-016,
+ OG-6, NXM-001 (billing) |
+| NXM-026 | sage-knowledge-pack-and-pr1 | CODEX | P1 | Days 4–7 | TODO | NXM-016,
+ OG-6 (no billing dependency — D-015) |
+| NXM-027 | arena-gmr-wiring + multi-benchmark-scoring | CODEX | P1 | Days 4–7 |
+TODO | NXM-002, NXM-007 |
+| NXM-028 | catalogue-reconciliation + license-re-audit | CODEX | P1 | Days 4–7 |
+ TODO | NXM-002 |
+| NXM-029 | free-provider-discovery-wave | FABLE5 | P2 | Days 4–7 | TODO | — |
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 2 lines
+                without the swap = leak of internals (D-009 aspiration blocked
+on exactly this)
+AUTHORITY:      CHARTER(D-004, D-009); every publication leg = OPERATOR-GATE(OG
+-6)
+OBJECTIVE:      A public-safe SAGE Knowledge pack replaces the 12 internal docs
+; draft PR #1 lands
+                after the billing unlock; publication remains OFF until OG-6's
+four gates are
+                operator-recorded.
+                via the D-015 no-payment path (local gates, no Actions dependen
+cy); publication
+                remains OFF until OG-6's four gates are operator-recorded.
+NON-GOALS:      - No publication/sharing switch flips (OG-6). - No new gateway
+features.
+                - No OAuth implementation in this card (it is an OG-6 gate inpu
+t, tracked there).
+WRITE-SURFACE:  Codex checkout: config/sage/**, docs/ (public-safe pack sources
+), the
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 5 lines, removed 3 lines
+                - No OAuth implementation in this card (it is an OG-6 gate inpu
+t, tracked there).
+WRITE-SURFACE:  Codex checkout: config/sage/**, docs/ (public-safe pack sources
+), the
+                specimba/NEXUS_SAGE public repo (PR #1 branch).
+AFTER:          NXM-016 (P1 triple closed), NXM-001 step 3 (GH Actions billing
+unlocked), OG-6 for
+                any publication leg.
+AFTER:          NXM-016 (P1 triple closed), OG-6 for any publication leg. (Bill
+ing dependency
+                REMOVED per D-015 — GH Actions stays locked and unpaid, the car
+d routes around it.)
+PRECONDITIONS:
+  1. RUN: gh auth status                                                  EXPEC
+T: authenticated (also
+     satisfies the deferred PR #52 live-state check — fold its verdict into the
+ REPORT)
+  2. RUN: gh run list -R specimba/NEXUS_SAGE -L 1                         EXPEC
+T: runs no longer billing-blocked
+  2. RUN: gh api repos/specimba/NEXUS_SAGE/branches/main/protection       EXPEC
+T: 404 (unprotected)
+     or no required status checks that would block a docs-only merge; if checks
+ ARE required,
+     removing them / disabling Actions is a repo-settings step (free) — OPERATO
+R-GATE if admin needed
+STEPS:
+  1. Author the public-safe Knowledge pack: strip/replace internal paths, ports
+, lane names, live
+     hostnames, governance docs (AGENTS.md, knowledge.md, 01_PROJECT_STATE.md c
+lass) with
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 6 lines, removed 1 line
+     public-facing equivalents; keep capability descriptions truthful.
+  2. Swap the GPT's Knowledge files to the public-safe pack (builder-side steps
+ enumerated for the
+     operator where ChatGPT-builder access is needed — OPERATOR-GATE those exac
+t clicks).
+  3. Land PR #1 (13 docs-only files, CodeRabbit-approved) once CI runs.
+  3. Land PR #1 (13 docs-only files, CodeRabbit-approved) WITHOUT CI (D-015): r
+un the equivalent
+     checks locally (docs-only: the G1 topology scan + link/lint as applicable)
+, paste class-A
+     output in the REPORT, then merge — disabling Actions or removing required
+checks first if the
+     repo settings block it (free settings change; OPERATOR-GATE if admin right
+s needed). A
+     self-hosted runner is the only sanctioned future CI (free) and needs its O
+WN card — do not
+     set one up here.
+GATE:
+  G1. Scan the final Knowledge pack: RUN: Select-String -Pattern "7350|7352|735
+5|7356|7357|9224|
+      17452|ngrok|NEXUSlogs|ARCHIVIST|C:\\Users" <pack files>             EXPEC
+T: zero internal-topology matches
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+GATE:
+  G1. Scan the final Knowledge pack: RUN: Select-String -Pattern "7350|7352|735
+5|7356|7357|9224|
+      17452|ngrok|NEXUSlogs|ARCHIVIST|C:\\Users" <pack files>             EXPEC
+T: zero internal-topology matches
+  G2. PR #1 CI green; merged (draft → ready only after G1).
+  G2. PR #1 merged with the local-gate evidence pasted in the REPORT (no CI dep
+endency — D-015);
+      draft → ready only after G1; paste the merge commit hash.
+  G3. Negative control: RUN: probe the ngrok tunnel outside an active session
+ EXPECT: down
+      (tunnel up only during active preview sessions — OG-6 posture).
+  G4. Publication switch state read back                                  EXPEC
+T: unpublished.
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+EVIDENCE:       A on all gates.
+RED-LINES:      D-009: publication strictly behind OG-6; no internal doc reache
+s the public repo or
+                the GPT Knowledge store.
+ON-BLOCK:       billing still locked → BLOCKED report naming NXM-001 step 3; co
+ntinue other cards.
+ON-BLOCK:       merge blocked by branch protection needing admin rights → OPERA
+TOR-GATE with the
+                exact settings path pasted; continue other cards. Never ask for
+ a billing unlock (D-015).
+DONE:           [ ] G1–G4  [ ] PR #52 verdict in REPORT  [ ] OG-6 REQUEST block
+ filed (gates status)
+HANDOFF:        OPERATOR (OG-6 decision package now complete); OPS.
+```
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 2 lines
+                use (remote cells are HF/trl/peft). - No pulls while Project ≥
+80%.
+WRITE-SURFACE:  Remote /home/mw/project/NEXUS_session4/** via sanctioned CDP ve
+rbs; proof-repo
+                (specimba/NEXUS_discovery_GPU) reports/session4/a800/m0/**; ARC
+HIVIST\dispatch\reports\*.
+AFTER:          NXM-021 (gateway auth), NXM-001 (rotated GH PAT re-provisioned
+notebook-side),
+                NXM-019 (cell generator real).
+AFTER:          NXM-021 (gateway auth), NXM-001 (GH PAT + HF token delivered no
+tebook-side env —
+                existing values, D-014), NXM-019 (cell generator real).
+PRECONDITIONS:
+  1. RUN (WSL): curl with bearer against the relay per NXM-021 G1        EXPECT
+: 200
+  2. Quota: Project % read from the workbench status bar                 EXPECT
+: < 80%; if ≥ 60%,
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+  3. REWRITE: ~15 probe one-shots → one parameterized a800_probe.mjs; overlay-d
+ismisser family →
+     one dismiss_overlays.mjs with a selector table; supervisor trio → one leas
+e-aware supervisor.
+  4. DISCARD: ~120 session-scoped forcing one-shots (stale tick numbers/DOM sta
+te — actively
+     dangerous to re-run); all result/console dumps; .env.local (HF_TOKEN — NXM
+-001 rotates it);
+     dangerous to re-run); all result/console dumps; .env.local (HF_TOKEN — NXM
+-001 relocates it
+     to an ACL'd path, value unchanged per D-014);
+     .bak files. Copy-promote (no history); write the retire pointer file; repo
+int _launch_* entries.
+GATE:
+  G1. Secret scan over every promoted file: RUN: Select-String -Pattern "github
+_pat_|hf_[A-Za-z0-9]|
+
+Batch 3 — the Part 2 narrative sweeps. Pulling exact wrapped text for each remaining mention:
+
+  Ran 2 shell commands
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+invent"* — and its `DataSourceBadge` proposal (every panel declares WIRED/SEED/
+COMPUTED/MOCK) are
+adopted into NXM-038. It is parked on three operator decisions (OG-2). Its log
+also leaked two fresh
+credentials (a GitHub PAT named GLMfalltoken1 at log line 548; a Browserless ke
+y at line 786 —
+locations only, values not reproduced) — now in NXM-001's rotation queue.
+locations only, values not reproduced) — now in NXM-001's exposure register (co
+ntainment or
+accepted-risk per D-014; no rotation).
+
+### §3.6 GROK45 / Intern A800 — the conveyor that wouldn't stop
+
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+| Score honesty (API) | **B+** | 0 fake scores live [A]; residual fake-render p
+ath in 7356 | A — no invented number anywhere operator-visible | NXM-007/009/02
+7 |
+| Service availability | **B** | every port answers [A] | B+ with ordered boot
++ health that means something | NXM-034, NXM-007 |
+| Network exposure | **D** | 7350 + 8765/8766 on 0.0.0.0 [A]; ngrok 24/7 | A —
+loopback default, firewall runbook, tunnel session-only | NXM-006/035, OG-6 |
+| Secrets hygiene | **F** | PAT re-leak ~104 occurrences [B]; 8-item rotation q
+ueue; token-cell injection channel | B — rotation done, structural delivery (en
+v/ACL files), no inline values | NXM-001, NXM-023 |
+| Secrets hygiene | **F** | PAT re-leak ~104 occurrences [B]; 8-item exposure r
+egister; token-cell injection channel | B — containment done: structural delive
+ry (env/ACL files), at-rest redaction, accepted-risk register (D-014), no inlin
+e values | NXM-001, NXM-023 |
+| VCS discipline | **F** | 169 dirty entries, 0 commits ~50h [A] | B — gate-gre
+en → commit mechanical; tree ≤ 10 entries | NXM-002, D-004 |
+| Training/data governance | **D** | fake eval stub, license hole, no lineage t
+ooling [B] | B — sealed holdout, lineage validated, license resolved | NXM-019/
+020/022, OG-3 |
+| Process discipline | **D** | approval loops, thrash, ghost frameworks (§5) |
+B — taxonomy self-check + REPORT protocol enforced | Part 0 §0.7/§0.8 |
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 3 lines, removed 2 lines
+concurrent / 60 per 60s + Retry-After); 24h deterministic job retention with a
+TOCTOU-hardened
+sweeper; launcher PID ownership; an instruction-contract regression gate. Focus
+ed suite 166 → **205
+passing**.
+- Public repo `specimba/NEXUS_SAGE`, draft PR #1 (13 docs-only files, CodeRabbi
+t-approved) — blocked
+externally on the GitHub Actions **billing lock** (NXM-001 step 3).
+- Public repo `specimba/NEXUS_SAGE`, draft PR #1 (13 docs-only files, CodeRabbi
+t-approved) — was
+blocked on a GitHub Actions **billing lock**, which stays locked by ruling: D-0
+15 forbids paying;
+NXM-026 lands the PR via local gates with Actions disabled/bypassed instead.
+
+The honest gaps — codex's own claim-audit ran "conditional fail," and the three
+ P1s became NXM-016's
+triple: the retention sweeper can target the wrong DB (`jobs.py:329` vs the lau
+ncher state dir, and
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 3 lines, removed 2 lines
+**Coverage note:** all seven agent lanes appear above (codex §4, kilo §1/§5, GL
+M52 Commander §3,
+z.ai dashboard §8-genus/§11, GROK45 §6/§7, LEANlabs §9, HERMES — no incident ye
+t; its packet
+inherits the prevention rules prospectively), plus the **operator** (§10 enforc
+ement gaps: the
+paddle install typed by hand that broke the training env [B]; the 24/7 ngrok tu
+nnel; the unrotated
+queue) and **FABLE5 itself** (§12, and §10.4's authoring crash). Nobody in this
+ program is above the
+paddle install typed by hand that broke the training env [B]; the 24/7 ngrok tu
+nnel; the exposure
+queue left undecided until the 07-14 D-014 ruling settled it as accepted risk)
+and **FABLE5 itself**
+(§12, and §10.4's authoring crash). Nobody in this program is above the
+ledger.
+
+---
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 3 lines, removed 2 lines
+- **OG-6 — SAGE publication.** Question: when may SAGE be shared? Context: firs
+t outward-facing
+surface; §4.4's gaps. The four gates (all, not any): OAuth + durable storage; `
+/v1/program`
+sandbox-class re-audit; edge :17452 pentest pass; ngrok up only during active s
+essions.
+Recommendation: hold publication until all four; the docs-only PR #1 can merge
+as soon as billing
+unlocks. Unblocks NXM-026's publication leg. Cost of delay: none — private oper
+ation continues.
+Recommendation: hold publication until all four; the docs-only PR #1 merges via
+ the D-015
+no-payment path (local gates, Actions disabled — no billing unlock ever). Unblo
+cks NXM-026's
+publication leg. Cost of delay: none — private operation continues.
+- **OG-7 — GROK45 re-arm ruling.** Question: does the lane ever come back? Cont
+ext: two HARD_STOP
+breaches; the mechanic is now understood and patched away from it (§8.3). Recom
+mendation on file:
+keep parked; any re-arm goes through NXM-003's operator-token challenge, and th
+e lane returns to CDP
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 7 lines, removed 6 lines
+Format: **owns / never / queue now / weakness → mitigation / red lines.** The w
+rite-surface map
+(§0.4) is the enforceable version; this is the narrative.
+
+**OPERATOR.** Owns: credential rotation + re-provisioning (NXM-001), kilo confi
+g application
+(NXM-004), elevation-gated steps (firewall/schtasks), all OG decisions, second
+confirmations, GH
+Actions billing. Never: — (but see the honesty note: three of §5's enabling con
+ditions were
+operator-side — the hand-typed paddle install, the 24/7 tunnel, the unrotated q
+ueue). Queue:
+NXM-001/004/008 + the OG batch. **Operator-minutes budget:** this program asks
+for roughly **2–3
+hours on Day 1** (rotation ~60–90 min, kilo rebuild ~15 min, decisions ~30 min)
+ and **~30 min/day
+**OPERATOR.** Owns: the credential containment + accepted-risk register (NXM-00
+1 REV 2 — no
+rotations per D-014, no payments per D-015), kilo config application (NXM-004),
+ elevation-gated
+steps (firewall/schtasks/repo-settings), all OG decisions, second confirmations
+. Never: — (but see
+the honesty note: three of §5's enabling conditions were operator-side — the ha
+nd-typed paddle
+install, the 24/7 tunnel, the exposure queue undecided until D-014 settled it).
+ Queue:
+NXM-001/004/008 + the OG batch. **Operator-minutes budget:** this program asks
+for roughly **1.5–2
+hours on Day 1** (containment register ~30–45 min, kilo rebuild ~15 min, decisi
+ons ~30 min) and **~30 min/day
+after** (report relay, board reads, gate confirmations). Cards are written so e
+verything else runs
+without you.
+
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 2 lines, removed 1 line
+Caught much, and: **undercounted the exposure set** (the "13-provider rotation
+queue" framing missed
+the z.ai lane's two fresh leaks — PAT GLMfalltoken1, Browserless key — plus the
+ SAGE-gateway bearer
+flagged compromised, the Browserless customer-ID URL, and the link-editable Dri
+ve folders; NXM-001
+carries the full queue now); **missed the z.ai dashboard lane entirely** (an en
+tire active lane with
+carries the full register now — as containment/accepted-risk per D-014, its "ro
+tate" recommendation
+itself overruled); **missed the z.ai dashboard lane entirely** (an entire activ
+e lane with
+deliverables and exposures absent from a "full coverage" sweep); and its queue
+ordering was
+superseded by wave 2 within hours. Its findings otherwise stand and are cited t
+hroughout.
+
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 12 lines, removed 9 lines
+
+The board is the truth; this is the same content as a morning routine. Times ar
+e estimates.
+
+**Step 1 — Rotation + re-provisioning (NXM-001, ~60–90 min, do first).** Rotate
+, in this order: the
+GitHub PAT for `NEXUS_discovery_GPU` (the ~104-occurrence leak); the PAT named
+GLMfalltoken1 (z.ai
+log :548); the Browserless key (:786); the SAGE-gateway bearer flagged compromi
+sed (:1123); the
+LongCat `ak_` key (live copy in `%USERPROFILE%\.modelrelay.json`); the Sakana `
+fish_` key; the
+HF_TOKEN in the scratch `.env.local`; the ngrok authtoken. Then the re-delivery
+ legs the card lists
+(notebook-side env — never cell source; WSL env file for HERMES) and the two ac
+cept/VOID rows
+(Browserless customer-ID URL, Drive link-sharing). Unlock GitHub Actions billin
+g while you're in the
+GitHub UI. **Nothing HERMES-side works until re-provisioning is done — sequence
+ it before any A800
+ambition.**
+**Step 1 — Containment register + delivery (NXM-001 REV 2, ~30–45 min, do first
+).** No rotations
+(D-014) and no payments (D-015) — instead, record one decision per register ite
+m (CONTAINED /
+ACCEPTED / VOID): the GitHub PAT for `NEXUS_discovery_GPU` (the ~104-occurrence
+ leak — scope-verify
+it in GitHub settings, free); the PAT named GLMfalltoken1 (z.ai log :548); the
+Browserless key
+(:786); the SAGE-gateway bearer flagged compromised (:1123); the LongCat `ak_`
+key (live copy in
+`%USERPROFILE%\.modelrelay.json` — stays); the Sakana `fish_` key; the HF_TOKEN
+ in the scratch
+`.env.local` (relocate the file to an ACL'd path, value unchanged); the ngrok a
+uthtoken. Redact the
+plaintext copies sitting in ARCHIVIST guides (documents lose values; providers
+keep keys). Then the
+delivery legs the card lists (notebook-side env — never cell source; WSL env fi
+le for HERMES) and
+the two accept/VOID rows (Browserless customer-ID URL, Drive link-sharing). Ski
+p GitHub billing
+entirely — NXM-026 no longer needs it. **Nothing HERMES-side works until the de
+livery legs are done
+— sequence them before any A800 ambition.**
+**Step 2 — Decide OG-4 (~5 min).** Vendor-as-truth is the recommendation on fil
+e. Codex's relay
+slice needs the answer.
+**Step 3 — Hand out packets (~15 min).** CODEX packet → its active session ("wo
+rk NXM-002; OG-4 =
+
+§10.4 corrections entry and the generator-script updates, then regeneration:
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 9 lines, removed 1 line
+completed Parts 1–2 in chunked, tail-verified writes. Lesson encoded in §7's FA
+BLE5 row. (3) **Count
+honesty:** "~30 cards" in the approved plan became **42 board rows** (38 agent
+mission cards + 3
+operator cards + 1 deferred stub) once every merged queue item got a row or a d
+isposition — the
+plan's count was an estimate, the board is the truth. (4) The prior plan (moonl
+it-popping-heron) was
+plan's count was an estimate, the board is the truth. (5) **v2 amendment (2026-
+07-14, same day):**
+v1 shipped NXM-001 as a rotation card and made NXM-026 wait on a GitHub Actions
+ billing unlock —
+both against the operator's actual stance (the no-rotation directive had been o
+n the record since
+the core-solidify era; the author carried it as "rotation is operator-only" ins
+tead of "no rotation
+at all"). The operator's ruling was transcribed as D-014 (no rotations — accept
+ed risk + structural
+containment) and D-015 (no GitHub payments — local gates / disabled Actions / s
+elf-hosted runner
+only); NXM-001 was recut to REV 2 and NXM-026 rerouted. Lesson: "operator-only
+action" and
+"action the operator wants" are different claims — the CHARTER now records the
+second, not the
+first. (4) The prior plan (moonlit-popping-heron) was
+rejected twice for structural reasons (§10.5) — the rejection pattern, not the
+content, drove this
+document's shape.
+
+
+● Update(~\.claude\jobs\6e30788a\tmp\gen_packets.sh)
+Added 1 line
+
+SHA=$(sha256sum "$F" | cut -c1-12)
+TS=$(date +%Y-%m-%dT%H:%M:%S%z)
+VER=$(grep -m1 "^DOC-VERSION:" "$F" | awk '{print $2}')
+
+P1=$(grep -n "^# PART 1" "$F" | head -1 | cut -d: -f1)
+P2=$(grep -n "^# PART 2" "$F" | head -1 | cut -d: -f1)
+
+● Update(~\.claude\jobs\6e30788a\tmp\gen_packets.sh)
+Added 1 line, removed 1 line
+    echo "PACKET:          ${exec_name}_MISSIONS_2026-07-14.md"
+    echo "MASTER-DOC:      ${F}"
+    echo "MASTER-SHA256:   ${SHA} (first 12)"
+    echo "DOC-VERSION:     1"
+    echo "DOC-VERSION:     ${VER}"
+    echo "GENERATED:       ${TS}"
+    echo "BOARD-SNAPSHOT:  FROZEN at generation time — live status lives with OPS
+ via dispatch\\reports\\"
+    echo "ACTIONABLE-WHEN: ${actionable}"
+
+● Update(~\.claude\jobs\6e30788a\tmp\gen_packets.sh)
+Added 1 line, removed 1 line
+ADD_OPERATOR=$(cat <<'EOT'
+**OPERATOR notes:**
+- Your Day-1 sequence is written out in the master doc Part 2 §11 (first two hou
+rs) — this packet carries only your cards and the decision gates (§0.2). The sev
+en OG decisions are yours; OG-4 is needed Day 1.
+- Rotation values never get typed into any agent session — rotate in the provide
+r UIs, deliver via the ACL'd files/env paths the cards name.
+- D-014/D-015 standing rulings: NO key rotations (exposures are your accepted ri
+sk, recorded per item in NXM-001's register; containment is structural only) and
+ NO GitHub payments (NXM-026 routes around the Actions billing lock). Credential
+ values never get typed into any agent session — deliver via the ACL'd files/env
+ paths the cards name.
+EOT
+)
+
+
+● Update(~\.claude\jobs\6e30788a\tmp\gen_packets.sh)
+Added 1 line, removed 1 line
+
+| step | packet | when | first card(s) | inert until |
+|---|---|---|---|---|
+| 1 | OPERATOR | Day 1, first | NXM-001 (rotation), then decide OG-4 | — |
+| 1 | OPERATOR | Day 1, first | NXM-001 (containment register — no rotations per
+ D-014), then decide OG-4 | — |
+| 2 | CODEX | Day 1, after OG-4 decision | NXM-002 slice-commits (relay slice ne
+eds OG-4) | — |
+| 3 | SONNET5-CLI | Day 1, parallel | NXM-003 → NXM-021 → NXM-005 (one session e
+ach) | repo cards: their AFTER edges |
+| 4 | OPERATOR (self) | Day 1 | NXM-004 kilo config apply | — |
+
+Fixing an ordering slip I just introduced in §10.4 (inserted entry landed before item 4 — renumbering), then regenerating:
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+completed Parts 1–2 in chunked, tail-verified writes. Lesson encoded in §7's FA
+BLE5 row. (3) **Count
+honesty:** "~30 cards" in the approved plan became **42 board rows** (38 agent
+mission cards + 3
+operator cards + 1 deferred stub) once every merged queue item got a row or a d
+isposition — the
+plan's count was an estimate, the board is the truth. (5) **v2 amendment (2026-
+07-14, same day):**
+plan's count was an estimate, the board is the truth. (4) **v2 amendment (2026-
+07-14, same day):**
+v1 shipped NXM-001 as a rotation card and made NXM-026 wait on a GitHub Actions
+ billing unlock —
+both against the operator's actual stance (the no-rotation directive had been o
+n the record since
+the core-solidify era; the author carried it as "rotation is operator-only" ins
+tead of "no rotation
+
+● Update(~\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md)
+Added 1 line, removed 1 line
+containment) and D-015 (no GitHub payments — local gates / disabled Actions / s
+elf-hosted runner
+only); NXM-001 was recut to REV 2 and NXM-026 rerouted. Lesson: "operator-only
+action" and
+"action the operator wants" are different claims — the CHARTER now records the
+second, not the
+first. (4) The prior plan (moonlit-popping-heron) was
+first. (5) The prior plan (moonlit-popping-heron) was
+rejected twice for structural reasons (§10.5) — the rejection pattern, not the
+content, drove this
+document's shape.
+
+
+  Ran 3 shell commands, wrote 2 memories
+
+❯ /compact
+
+Both rulings are now law in the doc, not suggestions. Sanity-checked at ship: DOC-VERSION 2, all 7 packets + cover sheet restamped b59d4246cf55, sweep shows no remaining rotation orders or billing dependencies, ledger appended (182/182 valid).
+
+What changed:
+
+1. Two new CHARTER lines (§0.3), so no agent ever re-asks: D-014 — no credential rotations, period. Exposed keys stay live as your accepted risk, recorded per item; containment is structural only. D-015 — no payments to GitHub. Anything depending on paid GH features is banned; even asking you to pay is classed as an APPROVAL-BEG violation.
+2. NXM-001 recut (REV 2): credential-containment-and-accepted-risk. Rotation is gone. Instead the card is a decision register — each of the 8 exposure items gets one recorded mark (CONTAINED / ACCEPTED / VOID) — plus four zero-cost, zero-value-change actions: scope-verify the two GitHub PATs in settings (narrowing an over-broad scope is allowed, it keeps the value); structural delivery of the existing tokens (notebook-side env, the bearer file HERMES reads); at-rest redaction (the plaintext copies sitting in ARCHIVIST guides get scrubbed from the documents — providers keep the keys); and abuse tripwires (PAT last-used / provider-dashboard glances) as the safety net that replaces revocation. Your Day-1 estimate drops from ~60–90 min to ~30–45 min.
+3. NXM-026 (SAGE PR #1) rerouted off billing entirely. The workaround: it's a 13-file docs-only PR, so CI adds nothing — the card now runs the equivalent checks locally (the internal-topology scan gate), pastes class-A output in the REPORT, disables Actions or removes required status checks if repo settings block the merge (both free), and merges. The billing lock stays locked forever. If real CI is ever wanted later, the sanctioned path is a self-hosted runner (free) as its own card — explicitly not set up here.
+4. Sweep completed across board rows, the OG-6 brief, the operator RACI row, the Day-1 walkthrough, the scorecard, and the wave-1 correction note. I also logged the honest correction in Part 2 §10.4: v1 shipped a rotation card despite your standing no-rotation stance — the lesson recorded is that "operator-only action" and "action the operator wants" are different claims, and the CHARTER now records the second.
+
+The OPERATOR packet in ARCHIVIST\dispatch\ is regenerated with all of this — your Day 1 is now: fill the NXM-001 register, decide OG-4 (vendoring), hand out the CODEX and SONNET5-CLI packets, apply the kilo config. No provider UIs, no wallet.
+
+result: Master doc amended to v2 — D-014 (no key rotations, accepted-risk register) and D-015 (no GitHub payments, SAGE PR lands via local gates + disabled Actions) transcribed, NXM-001 recut, NXM-026 rerouted, all 7 packets restamped b59d4246cf55, ledger checkpointed.
+
+✻ Worked for 7m 28s
+
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+Read ..\..\..\..\..\.claude\projects\C--Users-speci-000-Documents-NEXUS\memory\nexus-perf-diagnosis-2026-07-14.md (20 lines)
+Referenced file ..\..\..\..\..\Downloads\ARCHIVIST\nexusSYSTEMdiagnosisofPERFORMANCEleaksDIAGNOSIScheckFABLE1407.md
+Read ..\..\..\..\..\.claude\projects\C--Users-speci-000-Documents-NEXUS\memory\nexus-masterdoc-dispatch-2026-07-14.md (21 lines)
+Referenced file ..\..\..\..\..\Downloads\ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md
+Referenced file ..\..\..\..\..\.claude\jobs\6e30788a\tmp\gen_packets.sh
+
+❯ " https://q1ax3501qx30-d.space-z.ai " and simple ctrl+a copy "
+  NEXUS
+  a2a·control·plane
+  Ops Board
+  MCP
+  Lanes
+  Handoffs
+  Browserless
+  CDP :9224 · live truth
+  Ops Board
+  multi-lane A2A mirror · realtime polling
+
+  app ok · 15:16:42
+  Keep Visible
+  CDP :9224 is live truth. This app is the operator mirror.
+  Run keep_visible_daemon on the Windows host ·  VISIBLE_LANES=1
+  14
+  lanes tracked
+  8 / 5
+  ready / partial
+  22
+  MCP tools
+  5
+  recent handoffs
+  Lane Grid
+  view all →
+  Grok
+  READY
+  MCP + synth + Drive work folder coordinator
+
+  Success signal
+  MCP tools respond; synth artifacts land in Drive work folder
+  Wait policy
+  Coordinator — orchestrates others, does not block on chat essays
+  lane_id: grok
+  GLM-5.2
+  READY
+  This sandbox — NEXUS control-plane runtime
+
+  Success signal
+  App compiles, boards render, STATE.md advances per milestone
+  Wait policy
+  Retries only. Model lock. No model switch / no flash fallback.
+  lane_id: glm52
+  Qwen WebDev
+  PREVIEW MODE
+  Frontend preview/code/deploy lane
+
+  Success signal
+  Preview / Code / Deploy DOM appears (NOT a chat essay)
+  Wait policy
+  No chat-essay wait — success = preview DOM, stop waiting for prose
+  lane_id: qwen_webdev
+  Qwen Deep
+  PARTIAL
+  Deep reasoning lane
+
+  Success signal
+  Structured reasoning output committed
+  Wait policy
+  Standard queue wait
+  lane_id: qwen_deep
+  DeepSeek
+  READY
+  Fast code / review lane
+
+  Success signal
+  Assistant markdown grows with concrete code/review deltas
+  Wait policy
+  Fast code/review — short wait, expect deltas
+  lane_id: deepseek
+  MiMo Claw
+  PARTIAL
+  Red-team / adversarial gate
+
+  Success signal
+  Daily 4h red-team VERDICT issued
+  Wait policy
+  Paranoid gate — do not pass lanes until verdict clears
+  lane_id: mimo_claw
+  Zo
+  READY
+  Ubuntu host + NEXUS agents
+
+  Success signal
+  Resume summary produced after every pause
+  Wait policy
+  Resume summary required after pause — NOT hide-stress
+  lane_id: zo
+  Gemini
+  READY
+  Canvas + Drive storage bridge
+
+  Success signal
+  Drive package published / Canvas artifact shared
+  Wait policy
+  Storage bridge — async, poll for package
+  lane_id: gemini
+  ChatGPT
+  PARTIAL
+  Multi-lane browser truth (CDP :9224)
+
+  Success signal
+  Browser lane responsive under CDP
+  Wait policy
+  Standard queue wait
+  lane_id: chatgpt
+  MiniMax
+  READY
+  general / coder / verifier team cycles
+
+  Success signal
+  Team cycle completes with verifier sign-off
+  Wait policy
+  Team cycles — rotate general/coder/verifier
+  lane_id: minimax
+  Mistral Code
+  READY
+  GitHub + Drive implementation coder
+
+  Success signal
+  PR opened + Drive artifact committed
+  Wait policy
+  Implementation — wait for PR
+  lane_id: mistral_code
+  Intern
+  ──── (432 lines hidden) ───────────────────────────────────────────────────────────────────────
+  rs — the best-designed one (AdaptiveCircuitBreaker, 3-state, exponential backoff) is dead code; the others are also dead or non-functional
+  2 parallel vault designs — neither implements hash chaining despite claims; /api/vault verify_chain only checks timestamps + JSON parse (NOT cryptographic)
+  Token budget consistently undercounts — /api/ai-bridge and /api/chat (the heaviest LLM consumers) never log tokens or update budget
+  Entire WebSocket service is fabricated — 5 channels of randomly generated events from hardcoded pools; no real swarm telemetry
+  Governor thresholds stored but NEVER enforced — no route checks "is trust ≥ threshold?"
+  Poisoning detection (MinjaDetector v2, 285 lines) is sophisticated but completely unwired
+  No real alerting, no incident response, no SLO tracking — Python logger.warning goes to stdout; dashboard notifications are 100% fabricated
+  Where fusion belongs
+  Fusion is a documentation/audit layer, not a code layer. It maps every UI component to its backend contract. The WIRED_VS_MOCKED.json is machine-readable and accurate (52 WIRED, 8 SEED, 10 COMPUTED, 14 MOCK = 84% real). The dashboard should expose these statuses to the operator via DataSourceBadge components — currently the operator cannot tell real data from fabricated.
+
+  The new ops board design
+  Evolve, don't invent. The new ops board is the existing NEXUS OS dashboard with its gaps fixed, its Python backend wired, and its mock surfaces replaced. Preserve the 16 strengths (command palette, threshold sliders, 5-track vault coloring, etc.). Fix the 12 highest-priority gaps (wire overview to /api/system, add data source badges, consolidate trust/circuit-breaker/vault, wire TokenGuard, replace fabricated WS events, add real alerting). Reserve SAGE's slot (10th tab + stub route) without blocking.
+
+  What I need from you to proceed
+  Convergence direction — port the NEXUS OS tabs into THIS repo (my recommendation — it already has Browserless, SAGE gateway, git backup, GPG signing), or work within nexusalpha?
+  Python backend wiring — wire the bridge as canonical governance layer (recommended by all 5 agents), with STUB fallback when unreachable?
+  Priority — start with Layer 1 MVP (port 6 real tabs + 12-model schema + DataSourceBadge), or fix the preview's remaining gaps first?
+  Everything is backed up to GitHub. The 1,736-line worklog + the 38K-line source extraction + the synthesis doc are all there for future sessions. " take your time with proper extensive planning with workflows. good luck
+
+Picking this up as a planning task for the GLM52 lane: I'll ground on three sources in parallel — the raw sandbox tar (A2AmirrorLANEzaiGLM52v1.tar), the old GLM-5.1 nexusDASHv1 workspace, and the mission-board/logs state after the master doc shipped — then design the combined lane-establishment plan.
+
+● 3 background agents launched (↓ to manage)
+Inspect GLM52 sandbox tar
+Explore old nexusDASHv1 pack
+Ground mission board and fresh logs
+
+Three explorers are running in parallel — one dissecting the sandbox tar, one inventorying the old nexusDASHv1 pack, one grounding on the GLM52 packet and post-ship log deltas. I'll synthesize when they report back.
+
+✻ Crunched for 4m 5s
+
+● Agent "Ground mission board and fresh logs" finished · 8m 58s
+
+Mission-board grounding is in. The load-bearing finding: GLM52's entire current assignment is one card — NXM-038 dashboard-fusion-mvp — parked behind operator gate OG-2, whose three decision lines (convergence direction / nexus_os wiring / MVP priority) are still blank. The sandbox agent's three closing questions in the conversation you pasted are literally those three OG-2 lines — so this plan is also the vehicle to resolve OG-2 and expand the lane beyond a single card. Also confirmed: the tar landed at 15:18 today as the only new z.ai artifact, no reports have arrived in the dispatch intake, and all post-ship motion was codex host-side work (walled off from this lane by the master doc).
+
+Still waiting on the two artifact explorers (sandbox tar + old nexusDASHv1 pack) before designing.
+
+✻ Cogitated for 24s
+
+● Agent "Explore old nexusDASHv1 pack" finished · 9m 50s
+
+The old pack inventory is in, and it's richer than the sandbox agent reported: nexusDASHv1 is the full extracted NEXUS OS working tree — 25 Prisma models (not 12), a 78-module Python governance backend, ~139 API routes, 40 tabs (7 orphaned). The explorer produced a concrete port-list (5-track vault schema, hash-chain proof trail, command palette, StressLab harness, governor threshold viz, token-guard/rate-limit proxy, MCP auth bridge, DataSourceBadge discipline) and an explicit do-NOT-port list (fabricated telemetry, three parallel trust systems, the Python backend wholesale).
+
+One security note folded into the plan rather than acted on: the explorer found a GitHub PAT embedded in nexusDASHv1\.git\config (remote specimba/nexusalpha) and an HF token in worklog.md:1006. Per your standing D-014 ruling these will NOT be rotated — they go into the NXM-001 exposure register as new at-rest-redaction rows instead.
+
+Waiting on the last explorer (the new sandbox tar) before moving to design.
+
+✻ Worked for 25s
+
+● Agent "Inspect GLM52 sandbox tar" finished · 11m 41s
+
+All three explorers are done — I now have the full picture:
+
+- Mission side: GLM52 lane = one card (NXM-038) parked on OG-2's three blank decisions, which are exactly the sandbox agent's three closing questions. Meanwhile the host side moved today: MCP bridge 7354 is live with 25 tools (the mirror hardcodes 22), Brain 7352 restored, relay serving 277 models, CDP 9224 watchdog running — so there's now real truth for the mirror to mirror.
+- New mirror app: clean, honest architecture but ~100% fabricated content as shipped; 4 real ingestion seams already built (ledger env path, MCP health probe, handoff POST, Browserless); fatal gap = the sandbox can never reach 127.0.0.1 on your host, and no state-transfer mechanism exists. Notably, the tar's upload/ folder shows you already manually upload host logs into the sandbox — a precedent (and also the exact vector that leaked the Browserless key before, so the plan will formalize a swept, structured alternative).
+- Old pack: full working tree with a concrete 10-item port list and an equally concrete do-not-port list.
+
+Now moving to the design phase: two Plan agents in parallel — one on lane architecture (truth-feed transport: git-bus vs upload vs paste, state-pack contract, dual deployment, security doctrine, OG-2 resolution), one on the file-level capability roadmap (it will also read the two design docs the sandbox wrote inside the tar, so the plan builds on the lane's own intent).
+
+● 2 background agents launched (↓ to manage)
+Design lane architecture and contracts
+Design file-level capability roadmap
+
+While the two designers run, I'll draft the plan file's context and grounding sections — those are fully determined by the recon findings.
+
+● Updated plan
+/plan to preview
+
+Plan file skeleton is drafted with the full grounding context. Waiting on the two design agents (architecture/contracts and file-level roadmap) to fill in the decision sections.
+
+✻ Crunched for 4m 41s
+
+● Agent "Design lane architecture and contracts" finished · 9m 53s
+
+The architecture design is in and it's decisive: a one-way, operator-triggered git-bus — a host-side generator script produces a redaction-swept STATE_PACK.json, commits it to the mirror's own private GitHub repo, and the sandbox pulls code + truth together (wipe-resilient, D-015-clean, no new sandbox secrets). Fallbacks: structured upload, then trimmed chat-paste; raw log uploads formally forbidden. It also caught two real wiring defects by probing the live bridge (the mirror reads a wrong health-hash field, and models ledger rows as ts while real rows use timestamp), confirmed the 22-vs-25 tool drift is exactly the three continuity/CDP tools, and drafted the three OG-2 resolution lines plus the card decomposition (NXM-038 REV 2 recut as a truth rail, new NXM-043 generator card, parked NXM-044 host-mode card).
+
+One nuance I'll adjust when writing the plan: the proposed fine-grained PAT for the host's bus clone must be framed strictly as an operator-performed, optional step (agents never create keys per D-001; reusing the host's existing git credential is the default).
+
+Waiting on the second designer (file-level port map) to finish.
+
+✻ Cooked for 32s
+
+● Agent "Design file-level capability roadmap" finished · 9m 33s
+
+Both designers are done and they converge cleanly. Now I'll review alignment, resolve the few cross-agent inconsistencies (pack path data/state_pack.json vs state/, PAT framing as operator-optional), and write the final plan.
+
+● Updated plan
+/plan to preview
+User rejected Claude's plan:
+╭───────────────────────────────────────────────────────────────────────────────────────────╮
+│ GLM52 Lane Establishment — A2A Mirror Capability Upgrade Plan (2026-07-14)                │
+│                                                                                           │
+│ Context                                                                                   │
+│                                                                                           │
+│ The GLM52 lane is a z.ai-sandboxed GLM-5.2 agent with a Next.js workspace, deployed at a  │
+│ space-z.ai preview URL. It built the "NEXUS A2A mirror" ops dashboard (raw export:        │
+│ ARCHIVIST\A2AmirrorLANEzaiGLM52v1.tar, landed 2026-07-14 15:18, 296 files + full git history,                                                                                  │
+│ remote github.com/specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror). A months-older, far richer                                                                                    │
+│ "NEXUS OS" dashboard attempt (GLM-5.1) sits fully extracted at ARCHIVIST\nexusDASHv1      │
+│ (25 Prisma models, 78-module python nexus_os/, ~139 API routes, 40 tabs).                 │
+│                                                                                           │
+│ The operator asked for a deep-dive capability-improvement plan for this lane: combine the new                                                                                       │
+│ mirror and the old pack's best parts into the sophisticated ops board NEXUS actually needs. The                                                                                │
+│ sandbox agent's own last message ends with three questions (convergence direction / python backend                                                                            │
+│ wiring / priority) — verbatim the three blank lines of operator gate OG-2 that keep the lane's                                                                                    │
+│ only mission card NXM-038 dashboard-fusion-mvp parked. So this plan is simultaneously:    │
+│ (a) the OG-2 resolution, (b) the NXM-038 REV 2 recut, (c) the lane-establishment doctrine, and                                                                             │
+│ (d) the dispatch material the operator pastes into the z.ai conversation.                 │
+│ Approving this plan = making the three OG-2 decisions (they are spelled out in §D1 below and                                                                                       │
+│ will be transcribed into the master doc as the operator ruling).                          │
+│                                                                                           │
+│ The "preview is broken" CSS error in the pasted conversation is already fixed by the sandbox agent                                                                             │
+│ itself (globals.css line 1 carries the source(none) fix in the tar) — no action needed.   │
+│                                                                                           │
+│ Roles (binding, CHARTER): FABLE5 (this session) plans and authors docs/cards only — never │
+│ implements code (D-010); writes only to ARCHIVIST\**, the continuity ledger, own memory/plans,                                                                             │
+│ and job tmp. GLM52 implements everything sandbox/repo-side. SONNET5-CLI implements the host-side                                                                                 │
+│ script. CODEX's services (7350/7352/7354/7356) are untouched. D-005 (no fabricated data presented                                                                                 │
+│ as real), D-011 (CDP HARD_STOP), D-014 (NO key rotations — register + structural containment                                                                               │
+│ only), D-015 (no GitHub payments — free tier, no Actions dependency) all apply.           │
+│                                                                                           │
+│ Ground truth (5 recon/design agents, 2026-07-14)                                          │
+│                                                                                           │
+│ Mission system: GLM52 owns exactly one card, NXM-038 (P2, BLOCKED on OG-2, packet inert,  │
+│ dispatch\reports\ still empty). Master doc v2 b59d4246cf55 endorses: port into the OpsBoard                                                                                  │
+│ repo, STUB fallback for nexus_os, Layer-1 MVP first. Walls: host 7356 is codex-owned (NXM-009);                                                                                │
+│ OG-5 (antiGRAV cleanup) is a different lane.                                              │
+│                                                                                           │
+│ The mirror app (tar): Next 16 / React 19 / Tailwind v4 / shadcn / bun / standalone; honest                                                                                    │
+│ architecture, fabricated content — as shipped ~100% of visible data is 2025-01-14 seed fixtures.                                                                                 │
+│ Four real ingestion seams exist (/api/ledger via NEXUS_LEDGER_PATH, /api/mcp/health probing                                                                                   │
+│ 127.0.0.1:7354 with honest STUB fallback, POST /api/handoffs, Browserless POST needing a  │
+│ token). Permanently static: 14-lane grid (src/lib/registry.ts), 22-tool table             │
+│ (src/lib/mcpTools.ts), inline-mock MCP queue. Prisma unused; no auth; no realtime. THE    │
+│ structural gap: the sandbox can never reach the host's 127.0.0.1, and no state-transfer   │
+│ mechanism exists. The tar's upload/ folder proves raw multi-MB host logs get manually uploaded                                                                                  │
+│ into the sandbox today — the same flow that once leaked a Browserless customer-id into a z.ai chat                                                                                 │
+│ log. Two wiring defects found by live probe: the health route reads payload.registry_hash but                                                                                       │
+│ the live bridge emits registry_security.registry_schema_hash; the mirror's LedgerRow models                                                                                    │
+│ ts while real ledger rows key on timestamp.                                               │
+│                                                                                           │
+│ The host (live today, verified): MCP bridge 7354 v2.4.0 LIVE with 25 tools (drift vs the  │
+│ mirror's static 22 = exactly continuity_append, continuity_tail, cdp_window_probe;        │
+│ registry_schema_hash 102aca727ff0b7ce); Brain 7352 observe-only; relay 7350 with 277 models;                                                                                   │
+│ CDP :9224 keep-visible watchdog active; canonical ledger NEXUSlogs\NEXUScontinuity_runs.jsonl                                                      │
+│ (187 rows today); dispatch board + empty reports intake in ARCHIVIST.                     │
+│                                                                                           │
+│ The old pack (donor): port-worthy — DataSourceBadge + WIRED_VS_MOCKED provenance discipline,                                                                               │
+│ cmdk command palette, hash-chain proof concept, token meters (concept only). NOT port-worthy —                                                                             │
+│ simulated overview/system-logs/notifications, Math.random() WS fallback, 3 parallel trust │
+│ systems, python wholesale, 7 orphaned tabs. New exposure locations (D-014: register, never                                                                                     │
+│ rotate): GitHub PAT embedded in nexusDASHv1\.git\config remote URL; HF token at           │
+│ nexusDASHv1\worklog.md:1006.                                                              │
+│                                                                                           │
+│ Design decisions                                                                          │
+│                                                                                           │
+│ D1 — OG-2 resolution (the three lines; approval of this plan enacts them)                 │
+│                                                                                           │
+│ - OG-2(i) convergence: Port INTO NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror (main) — the    │
+│ mirror app is the living trunk; dashboard-pack/ and nexusDASHv1 are frozen read-only donors,                                                                                   │
+│ ported piecewise (DataSourceBadge first), never wholesale. nexusalpha remains scratch, not a                                                                                     │
+│ convergence target.                                                                       │
+│ - OG-2(ii) nexus_os wiring: STUB — no nexus_os python is wired in any mode this rev; live │
+│ truth arrives solely as the operator-published STATE_PACK v1 on the git-bus (swept,       │
+│ fail-closed); any panel without pack coverage renders an explicit SEED/MOCK badge (D-005).                                                                                  │
+│ - OG-2(iii) priority: Layer-1 MVP first, redefined as the truth rail: STATE_PACK ingestion                                                                                 │
+│   - staleness + per-panel DataSourceBadge across Lanes/MCP/Ledger/Board, gated on a pack  │
+│ round-trip proof. The six fusion tabs (Vault/Swarm/Governor/GMR/StressLab/Research) move to a                                                                                      │
+│ later rev — porting them now while nexus_os is STUB would be badge-decorated mock theater │
+│ (deviation from REV 1's letter, flagged and justified; honors "MVP first" + D-005 better).                                                                                  │
+│                                                                                           │
+│ D2 — Truth-feed architecture: one-way, operator-triggered, fail-closed git-bus            │
+│                                                                                           │
+│ HOST (sources: ledger JSONL, GET 7354/health, master-doc board, ports doctor)             │
+│   → nexus-pack-gen (NXM-043): collect → assemble STATE_PACK.json → REDACTION SWEEP (fail-closed)                                                                             │
+│   → commit data/state_pack.json to the mirror's own private GitHub repo (free tier, no Actions)                                                                                  │
+│   → sandbox: git pull (code + truth together) → /api/state → every panel badged + staleness chip                                                                            │
+│ - Transport ladder: T1 git-bus (primary; survives sandbox wipes, one command per refresh, │
+│ git log = audit trail) → T2 structured upload of the same swept pack file → T3 trimmed    │
+│ chat-paste (≤8 KB, emergency). Raw host-log uploads are DEPRECATED-FORBIDDEN.             │
+│ - Pack lives at data/state_pack.json in the repo (gitignore-exempt; loader default, env   │
+│ NEXUS_STATE_PACK_PATH override for host-mode). Host bus clone lives OUTSIDE Documents\NEXUS                                                                           │
+│ and Downloads\NEXUSlogs (e.g. C:\Users\speci.000\mirror-bus\) to keep canon trees clean.  │
+│ - STATE_PACK v1 (semver pack_schema; soft 128 KiB / hard 512 KiB): envelope (pack_id,     │
+│ generated_at UTC, ttl_hours, generator, master_doc_sha, mandatory sweep proof block) +    │
+│ sections lanes[] (id/status/evidence/class/checked_at), mcp (status, version, tool_count, │
+│ registry_schema_hash, tools[] w/ schema_hash, queue), ledger_tail (last N rows verbatim), │
+│ board.cards[] (id/title/executor/priority/status/gate/rev), ports_doctor[]; optional      │
+│ host_metrics/handoffs null in v1.0. Absent section ⇒ UI renders labeled STUB.             │
+│ - Redaction sweep (host-side, inside generator, on serialized pack bytes + git diff --cached):                                                                                │
+│ Tier A credential-prefix regexes (gh*/github_pat/sk-/hf_/fish_/ak_/Bearer/JWT/ngrok tokens+URLs/                                                                              │
+│ AKIA/xox/PEM/browserless+customer-id), Tier B contextual assignment heuristic with JSONPath                                                                                  │
+│ allowlist (handoffs[].token ~ ^nx_), Tier C exact-literal denylist of every NXM-001       │
+│ register value (host-only file, never committed). Any hit = exit 2, pack does not ship;   │
+│ only a redacted hit report (class, path, sha256[:8]) is written. Canary test (planted fake                                                                                      │
+│ ghp_… must block) is a hard gate of NXM-043.                                              │
+│                                                                                           │
+│ D3 — NXM-038 REV 2 scope (GLM52, sandbox; zero new npm deps — zod/cmdk/shadcn all present)                                                                                  │
+│                                                                                           │
+│ Truth rail + honesty rail, 7 sandbox-verifiable steps (full port map in the design doc):  │
+│ 1. Badge substrate: adapt donor data-source-badge.tsx → src/components/DataSourceBadge.tsx                                                        │
+│ with states WIRED | PACK(+age) | SEED | MOCK | OFF and required panelId prop; retrofit all                                                                                       │
+│ existing panels; new docs/WIRED_VS_MOCKED.json panel manifest; badge-tally grep gate.     │
+│ 2. Pack seam: new src/lib/statePack.ts (zod v1 schema, mtime-cached loader, staleness math);                                                                                    │
+│ new POST/GET /api/import (1.5 MB cap, sandbox-side credential-sweep → 422, writes         │
+│ data/state_pack.json); paths.ts env additions; committed data/test_pack.example.json      │
+│ sentinel fixture (42 cards, tool_count 25, lane zo broken).                               │
+│ 3. Lanes pack-driven: registry.ts statuses become SEED baseline + applyPackStatuses();    │
+│ /api/lanes returns {lanes, source}; nav PackStatusChip ("PACK v1 · 2h" / "NO PACK — SEED  │
+│ MODE").                                                                                   │
+│ 4. MCP de-mock: mcpTools.ts prefers pack.mcp.tools (25 live) with static-22 fallback +    │
+│ visible drift note; queue route de-inlined to data/sample_mcp_queue.json (tsk_seed_*,     │
+│ "sample":true) or pack queue; fix health route to read                                    │
+│ registry_security.registry_schema_hash.                                                   │
+│ 5. Mission Board tab: new /board page + MissionCard/BoardFilters components rendering     │
+│ pack.board.cards (42 NXM cards; status columns, executor/priority/gate filters, stat tiles);                                                                                   │
+│ no pack → 6 watermarked NXM-SEED-* cards + import banner. Plain divs, no recharts.        │
+│ 6. Palette + host-mode gating + watermarks: port command palette (strip zustand/theme-toggle;                                                                     │
+│ route nav over the 6 pages, Ctrl+K); Browserless page/API render OFF/503 host-only when   │
+│ BROWSERLESS_TOKEN absent (always absent in sandbox); "sample":true watermark on all       │
+│ data/sample_* fixtures; ledger reader accepts both timestamp and ts; replace hello-world  │
+│ api/route.ts with an API index.                                                           │
+│ 7. Docs + negative control: README/STATE.md Milestone F/docs/STATE_PACK.md/MCP_CONTRACT   │
+│ updates + contract:sync script (tool table regenerated from pack, never hand-authored);   │
+│ full no-pack walk of all 6 pages ⇒ zero fake-live surfaces.                               │
+│ Gates: every step bun run lint && bun run build (build alone insufficient —               │
+│ ignoreBuildErrors:true); G1 build+lint green; G2 badge tally == manifest == panel count; G3                                                                                        │
+│ negative control (zero unbadged MOCK/SEED); G4 pack round-trip proof (operator pushes fresh                                                                                     │
+│ pack → sandbox pulls → UI shows new pack_id/generated_at; screenshot + commit hash in REPORT).                                                                                  │
+│ Memory constraint: verify via standalone bun start, never long-lived bun run dev (old sandbox                                                                                   │
+│ died ~60s); never touch globals.css lines 1-2 (source(none) + @source).                   │
+│                                                                                           │
+│ D4 — New cards (total board 42 → 44; both SONNET5-CLI)                                    │
+│                                                                                           │
+│ - NXM-043 state-pack-generator-and-git-bus (P1): operator-run nexus-pack-gen (PowerShell or                                                                                        │
+│ Python) — collectors (ledger tail read-only, GET 7354/health, master-doc board parse, ports                                                                                     │
+│ doctor) → STATE_PACK v1 → sweep tiers A/B/C w/ unit tests incl. canary → commit+push to the                                                                                       │
+│ mirror repo from the bus clone. Git identity: reuse the host's existing GitHub credential by                                                                                        │
+│ default; optionally the operator may provision a narrower fine-grained single-repo PAT    │
+│ (scope-narrowing allowed under D-014 structural containment; agents never create or handle key                                                                                │
+│ values, D-001). Local copy always written to NEXUSlogs\state_pack\ for T2/T3 fallback.    │
+│ Gates: sweep tests + canary block; schema-valid pack; live round-trip with NXM-038 G4;    │
+│ runbook (manual per-session; optional Task Scheduler later — never GH Actions, D-015).    │
+│ - NXM-044 mirror-host-mode-deploy (P3, PARKED; AFTER: 038 REV 2 + 043): clone/config/validate                                                                     │
+│ the same app on the host, MIRROR_MODE=host, non-CODEX port (e.g. 3010), direct            │
+│ NEXUS_LEDGER_PATH + live 7354 probe + host-only BROWSERLESS_TOKEN enabling the Browserless                                                                               │
+│ tab. No new sandbox code — REV 2 ships the env-driven paths. Gate: ports doctor shows no CODEX                                                                                     │
+│ collision; Browserless provably absent from sandbox builds.                               │
+│                                                                                           │
+│ D5 — Lane security doctrine (RED-LINES on the cards + proposed CHARTER D-016)             │
+│                                                                                           │
+│ RL-1 no NEXUS secret ever enters the z.ai sandbox by any channel (env/repo/pack/chat) except the                                                                                │
+│ lane's own operator-issued repo push credential; RL-2 BROWSERLESS_TOKEN + Browserless feature =                                                                                 │
+│ host-mode-only; RL-3 raw host-log uploads FORBIDDEN — swept STATE_PACKs are the only host→sandbox                                                                              │
+│ channel; RL-4 sweep gate fail-closed, no in-lane override; RL-5 register (never rotate) the two                                                                                   │
+│ nexusDASHv1 exposures as NXM-001 rows 9-10, exclude nexusDASHv1\** from every pack/upload path,                                                                                     │
+│ add literals to Tier-C denylist; RL-6 any credential sighting = [REDACTED]+location report to the                                                                             │
+│ register, never a rotation (D-014), never paid remediation (D-015).                       │
+│ D-016 (proposed, enacted by plan approval): "No NEXUS secret may enter a third-party sandbox                                                                                   │
+│ surface. Host→sandbox truth transfer only via generator-produced, redaction-swept STATE_PACKs;                                                                              │
+│ raw host-log uploads into sandboxes are forbidden." (Generalizes the z.ai leak lesson to CHARTER.)                                                                                 │
+│                                                                                           │
+│ D6 — MCP/SAGE future hooks (interfaces only)                                              │
+│                                                                                           │
+│ Contract-first: pack carries live tool inventory + registry hash; MCP_CONTRACT.md tool table is                                                                                  │
+│ regenerated from the pack (contract:sync), prose/denylist stay human-owned; UI drift banner when                                                                               │
+│ pack ≠ contract. SSE/streaming: reserved env only, live solely inside OG-6-sanctioned tunnel                                                                                    │
+│ windows; tunnel URLs are a sweep class. SAGE: reserved tab + /api/sage/status stub        │
+│ {status:"RESERVED", gated_on:"OG-6"} — v2 backlog, not in REV 2.                          │
+│                                                                                           │
+│ D7 — Backlog (recorded in design doc, not carded yet)                                     │
+│                                                                                           │
+│ v2: ledger-integrity panel (host-computed hash chain over ledger rows in pack — proof_chain                                                                               │
+│ concept at the right layer), handoff↔ledger cross-linking (frontend join), SAGE stub, /api/import                                                                               │
+│ shared-secret auth (host-mode prerequisite). v3: token/cost meters, governor threshold display,                                                                                  │
+│ vault 5-track donut (all pack-section extensions, display-only). DROP: StressLab, rate-limit tab,                                                                           │
+│ token-guard tab, SSRF proxy route, Prisma models (0 cherry-picked).                       │
+│                                                                                           │
+│ Deliverables this session will produce (after approval)                                   │
+│                                                                                           │
+│ All writes stay inside FABLE5's surfaces: ARCHIVIST\**, ledger append, own memory/plans, job tmp.                                                                                  │
+│ No repo commits, no PR (nothing in any git tree changes), no service ops.                 │
+│                                                                                           │
+│ 1. Design doc ARCHIVIST\NEXUS_GLM52_A2A_MIRROR_LANE_PLAN_2026-07-14.md — full architecture                                                                              │
+│ (flow diagram, transport rationale), STATE_PACK v1 schema (commented JSON) + sweep spec, the                                                                                       │
+│ complete 21-row file-level port map, 7-step build order with RUN:/EXPECT: gates, reconciliation                                                                            │
+│ table vs the lane's own two in-tar design docs, security doctrine, backlog, and Appendix A:                                                                                        │
+│ paste-ready reply to the sandbox conversation (answers its 3 questions, points at the packet                                                                                    │
+│   - git-bus pull).                                                                        │
+│ 2. Master doc v3 amendment (NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md):      │
+│ OG-2 marked RESOLVED with the three D1 lines + provenance (operator plan approval, this plan                                                                                      │
+│ file); NXM-038 recut REV 2 (new OBJECTIVE/STEPS/GATES per D3, RED-LINES per D5); new cards                                                                                     │
+│ NXM-043/044 (board rows, §0.4 SONNET5-CLI surface additions incl. bus-clone location rule,                                                                                     │
+│ card bodies); CHARTER D-016 appended; NXM-001 register rows 9-10; Part 2 walkthrough deltas                                                                                    │
+│ (§5.9 GLM52 sequence, OG list, scorecard count 42→44); DOC-VERSION 3; VERIFIED-AS-OF re-stamp.                                                                                 │
+│ 3. Packet regeneration: update gen_packets.sh (GLM52 preamble emits the three RESOLVED OG-2                                                                                      │
+│ lines instead of blanks; SONNET5-CLI packet picks up NXM-043/044) → regenerate all 7 packets +                                                                                 │
+│ cover sheet, restamped with the new sha256[:12].                                          │
+│ 4. Adversarial verification pass (Workflow tool, ≤3 auditors: claims-vs-evidence, doc/packet                                                                                │
+│ consistency, secrets-in-artifacts scan) → fix all findings → re-scan clean.               │
+│ 5. Closeout: ledger checkpoint row (fable5-20260714-glm52-lane-plan), memory update       │
+│ (nexus-masterdoc-dispatch-2026-07-14.md + new nexus-glm52-lane-plan-2026-07-14.md,        │
+│ MEMORY.md index), final summary with the operator run-order (hand GLM52 packet + paste    │
+│ Appendix A → dispatch SONNET5-CLI on NXM-043 → first pack round-trip → NXM-044 later).    │
+│                                                                                           │
+│ Files to create/modify                                                                    │
+│                                                                                           │
+│ - CREATE ARCHIVIST\NEXUS_GLM52_A2A_MIRROR_LANE_PLAN_2026-07-14.md                         │
+│ - MODIFY ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md (v2 → v3)       │
+│ - MODIFY ~\.claude\jobs\6e30788a\tmp\gen_packets.sh; REGENERATE ARCHIVIST\dispatch\* packets                                                                                   │
+│ - APPEND NEXUSlogs\NEXUScontinuity_runs.jsonl (one row)                                   │
+│ - UPDATE memory files under ~\.claude\projects\...\memory\                                │
+│ - (Executor cards will later touch: mirror repo per D3 — GLM52; host nexus-pack-gen + bus clone                                                                                     │
+│ — SONNET5-CLI. Not this session.)                                                         │
+│                                                                                           │
+│ Verification                                                                              │
+│                                                                                           │
+│ - Master doc: card count 44, OG-2 shows RESOLVED w/ provenance, D-016 present, register rows 9-10                                                                                 │
+│ present, no blank OG-2 lines anywhere; grep sweeps: no order to rotate/pay (D-014/D-015), no                                                                                        │
+│ raw-log-upload instruction survives, every NXM-043/044 AFTER/HANDOFF edge names existing cards.                                                                                    │
+│ - Packets: all 7 + cover restamped with identical new sha; GLM52 packet contains REV 2 card + the                                                                                │
+│ three RESOLVED lines; SONNET5-CLI packet contains 043/044; secrets scan of all regenerated                                                                               │
+│ artifacts = zero credential-shaped strings.                                               │
+│ - Auditor workflow: 0 open findings after fixes.                                          │
+│ - Ledger: JSON-parse all lines (n/n valid) after append.                                  │
+│ - Session hygiene: git status in the worktree unchanged (no repo writes).                 │
+╰───────────────────────────────────────────────────────────────────────────────────────────╯
+
+✻ Sautéed for 4h 32m 15s
+
+────────────────────────────────────────────────────────────── nexus-core-solidify audit triage ──
+❯
+──────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                              /rc
+  ⏸ plan mode on (shift+tab to cycle) · ← for agents
+  
+  
+  
