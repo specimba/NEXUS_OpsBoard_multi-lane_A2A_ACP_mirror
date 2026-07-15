@@ -1,0 +1,51 @@
+{
+  "_comment": "Sample MCP queue fixture. Per FABLE5 D3 step 4: de-inlined from the route. tsk_seed_* IDs, sample:true watermark. Replace with pack.mcp.queue when STATE_PACK is loaded.",
+  "sample": true,
+  "open": 3,
+  "claimed": 2,
+  "completed": 1,
+  "failed": 0,
+  "items": [
+    {
+      "id": "tsk_seed_001",
+      "lane": "mistral_code",
+      "title": "Open PR for handoff store",
+      "state": "open",
+      "created_at": "2025-01-14T08:27:33Z"
+    },
+    {
+      "id": "tsk_seed_002",
+      "lane": "meta_muse",
+      "title": "Fast HTML example for keep_visible banner",
+      "state": "open",
+      "created_at": "2025-01-14T08:55:14Z"
+    },
+    {
+      "id": "tsk_seed_003",
+      "title": "Awaiting lane assignment — GPU job spec",
+      "state": "open",
+      "created_at": "2025-01-14T09:16:02Z"
+    },
+    {
+      "id": "tsk_seed_004",
+      "lane": "qwen_deep",
+      "title": "Reasoning over handoff dedup policy",
+      "state": "claimed",
+      "created_at": "2025-01-14T09:10:33Z"
+    },
+    {
+      "id": "tsk_seed_005",
+      "lane": "deepseek",
+      "title": "Review mcp/health proxy SSRF surface",
+      "state": "claimed",
+      "created_at": "2025-01-14T08:09:30Z"
+    },
+    {
+      "id": "tsk_seed_006",
+      "lane": "minimax",
+      "title": "Verifier sign-off on lane registry",
+      "state": "completed",
+      "created_at": "2025-01-14T08:40:21Z"
+    }
+  ]
+}

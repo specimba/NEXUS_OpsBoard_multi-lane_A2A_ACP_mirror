@@ -10,6 +10,7 @@ export const ENV = {
   mcpHealthUrl: process.env.NEXUS_MCP_HEALTH_URL ?? "http://127.0.0.1:7354/health",
   mcpSseUrl: process.env.NEXUS_MCP_SSE_URL ?? "http://127.0.0.1:7354/sse",
   cdpPort: Number(process.env.NEXUS_CDP_PORT ?? 9224),
+  statePackPath: process.env.NEXUS_STATE_PACK_PATH ?? "",
 } as const;
 
 /** Absolute path to the bundled sample ledger (always available in-sandbox). */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   ExternalLink,
   Copy,
+  Power,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,18 @@ export default function BrowserlessPage() {
   const [url, setUrl] = useState("https://example.com");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ContentResult | null>(null);
+  const [tokenPresent, setTokenPresent] = useState<boolean | null>(null);
+
+  // Check on mount whether Browserless is configured (D3 step 6: render OFF when absent)
+  useEffect(() => {
+    fetch("/api/browserless/content", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com" }),
+    }).then((res) => {
+      setTokenPresent(res.ok);
+    }).catch(() => setTokenPresent(false));
+  }, []);
 
   async function fetchIt(e: React.FormEvent) {
     e.preventDefault();
@@ -108,6 +121,21 @@ export default function BrowserlessPage() {
         </div>
       </div>
 
+      {tokenPresent === false && (
+        <div className="nexus-panel rounded-lg border-slate-500/30 bg-slate-500/[0.05] p-6 text-center">
+          <Power className="mx-auto h-8 w-8 text-slate-400 mb-2" aria-hidden />
+          <p className="mono text-sm font-semibold uppercase tracking-wider text-slate-300">
+            OFF — Host-Mode Only
+          </p>
+          <p className="mono text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+            BROWSERLESS_TOKEN is not configured. This feature is disabled in sandbox
+            mode (D3 step 6). It will be available in host-mode (NXM-044) when the
+            token is present in <code className="text-slate-300">.env.local</code>.
+          </p>
+        </div>
+      )}
+
+      {tokenPresent === true && (
       <form onSubmit={fetchIt} className="nexus-panel space-y-3 rounded-lg p-4">
         <div className="space-y-1">
           <Label className="mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -153,6 +181,7 @@ export default function BrowserlessPage() {
           ))}
         </div>
       </form>
+      )}
 
       {result && (
         <div className="space-y-2">

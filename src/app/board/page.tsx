@@ -66,6 +66,16 @@ const EXECUTOR_CLS: Record<string, string> = {
   GROK420: "text-teal-300",
 };
 
+// D3 step 5: no pack → 6 watermarked NXM-SEED-* fallback cards + import banner
+const NO_PACK_FALLBACK_CARDS: BoardCard[] = [
+  { id: "NXM-SEED-001", title: "credential-containment-and-accepted-risk", executor: "OPERATOR", priority: "P0", status: "BLOCKED", gate: "—", rev: 2 },
+  { id: "NXM-SEED-017", title: "dashboard-fusion-mvp", executor: "GLM52", priority: "P2", status: "IN_PROGRESS", gate: "OG-2", rev: 2 },
+  { id: "NXM-SEED-022", title: "hermes-401-fix", executor: "SONNET5-CLI", priority: "P0", status: "READY", gate: "—", rev: 1 },
+  { id: "NXM-SEED-029", title: "doppelground-leak-triage", executor: "OPERATOR", priority: "P0", status: "IN_PROGRESS", gate: "—", rev: 1 },
+  { id: "NXM-SEED-031", title: "governance-api-endpoints", executor: "CODEX", priority: "P0", status: "READY", gate: "—", rev: 1 },
+  { id: "NXM-SEED-036", title: "external-handoff-gates", executor: "OPERATOR", priority: "P0", status: "BLOCKED", gate: "NXM-029", rev: 1 },
+];
+
 function MissionCard({ card }: { card: BoardCard }) {
   const sc = STATUS_CONFIG[card.status ?? ""] ?? STATUS_CONFIG.READY;
   const Icon = sc.icon;
@@ -192,10 +202,22 @@ export default function BoardPage() {
         ))}
       </div>
 
-      {/* Cards grid */}
+      {/* Cards grid — no pack → 6 watermarked NXM-SEED-* fallback cards (D3 step 5) */}
       {cards.length === 0 ? (
-        <div className="nexus-panel rounded-lg p-8 text-center text-xs text-muted-foreground">
-          No cards in pack.
+        <div className="space-y-3">
+          <div className="nexus-panel rounded-lg border-amber-500/30 bg-amber-500/[0.06] p-3">
+            <p className="mono text-xs text-amber-200/80">
+              NO STATE_PACK imported. Showing 6 watermarked NXM-SEED-* fallback cards.
+              To load the live mission board: run the NXM-043 generator on the host, then
+              <code className="mx-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-amber-200">POST /api/import</code>
+              with the swept STATE_PACK JSON.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {NO_PACK_FALLBACK_CARDS.map((card) => (
+              <MissionCard key={card.id} card={card} />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

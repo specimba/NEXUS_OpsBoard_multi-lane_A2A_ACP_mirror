@@ -60,4 +60,4 @@ server.log
 /data/handoffs.json
 
 # Local NEXUS env overrides (real ledger path, etc.)
-.env.local
+.env.localtool-results/
