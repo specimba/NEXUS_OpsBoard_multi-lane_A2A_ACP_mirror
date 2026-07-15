@@ -1,0 +1,1085 @@
+     1→"""
+     2→team/coordinator.py — Agentic Team Coordinator
+     3→
+     4→Central dispatch system for the GLM-5 full-stack long-term agentic team.
+     5→
+     6→Wires together:
+     7→  - Hermes experience-based routing  (who handles this task?)
+     8→  - mem0 persistent memory           (what do we know about similar tasks?)
+     9→  - Skill registry                    (which platform skill can help?)
+    10→  - OpenClaw file-driven task dispatch (how do we assign work?)
+    11→  - Outcome recording                  (what did we learn?)
+    12→
+    13→Architecture::
+    14→
+    15→    User Request
+    16→        │
+    17→        ▼
+    18→    ┌─────────────────────────────────────────────────┐
+    19→    │  TeamCoordinator.dispatch(task_description)      │
+    20→    │                                                  │
+    21→    │  1. Query mem0 for relevant past experience      │
+    22→    │  2. Classify task via Hermes (domain+complexity) │
+    23→    │  3. Check skill registry for fast-path match     │
+    24→    │  4. Select worker based on availability+ability  │
+    25→    │  5. Create .task.md in worker's pending queue    │
+    26→    │  6. Monitor for completion                       │
+    27→    │  7. Record outcome to Hermes + mem0              │
+    28→    └─────────────────────────────────────────────────┘
+    29→
+    30→Token Efficiency:
+    31→  - File-driven coordination (tasks in .task.md files, not in prompts)
+    32→  - Context injection only when relevant (mem0 search, not full history)
+    33→  - Workers receive minimal context (task description + relevant memories)
+    34→  - Results written to files, not returned through prompt chain
+    35→"""
+    36→
+    37→import logging
+    38→import re
+    39→import uuid
+    40→from dataclasses import dataclass, field
+    41→from datetime import datetime, timezone, timedelta
+    42→from pathlib import Path
+    43→from typing import Any, Dict, List, Optional, Tuple
+    44→
+    45→logger = logging.getLogger(__name__)
+    46→
+    47→# ── Conditional imports for concurrent subsystems ──────────────────────
+    48→
+    49→try:
+    50→    from nexus_os.vault.memory_adapter import Mem0Adapter
+    51→except ImportError:
+    52→    Mem0Adapter = None  # Graceful degradation
+    53→
+    54→try:
+    55→    from nexus_os.engine.skill_adapter import SkillRegistry
+    56→except ImportError:
+    57→    SkillRegistry = None  # Graceful degradation
+    58→
+    59→from nexus_os.db.manager import DatabaseManager, DBConfig
+    60→from nexus_os.engine.hermes import (
+    61→    HermesRouter,
+    62→    ModelProfile,
+    63→    TaskDomain,
+    64→    TaskComplexity,
+    65→    RoutingDecision,
+    66→    SkillRecord,
+    67→)
+    68→
+    69→
+    70→# ── Constants ──────────────────────────────────────────────────────────
+    71→
+    72→DEFAULT_OPENCLAW_BASE = Path.home() / ".openclaw" / "agents"
+    73→
+    74→WORKER_DEFINITIONS: List[Dict[str, Any]] = [
+    75→    {
+    76→        "worker_id": "glm5-worker-1",
+    77→        "agent_dir": "glm5-worker-1",
+    78→        "specializations": ["code", "analysis", "reasoning"],
+    79→        "model_profile": None,  # set dynamically
+    80→    },
+    81→    {
+    82→        "worker_id": "glm5-worker-2",
+    83→        "agent_dir": "glm5-worker-2",
+    84→        "specializations": ["code", "operations", "security"],
+    85→        "model_profile": None,
+    86→    },
+    87→]
+    88→
+    89→# Domain → worker mapping for default routing when Hermes is unavailable
+    90→DOMAIN_WORKER_MAP: Dict[str, str] = {
+    91→    "code": "glm5-worker-1",
+    92→    "analysis": "glm5-worker-2",
+    93→    "reasoning": "glm5-worker-1",
+    94→    "creative": "glm5-worker-2",
+    95→    "operations": "glm5-worker-2",
+    96→    "security": "glm5-worker-2",
+    97→    "unknown": "glm5-worker-1",
+    98→}
+    99→
+   100→STALL_THRESHOLD = timedelta(minutes=10)
+   101→
+   102→
+   103→# ── Data Classes ───────────────────────────────────────────────────────
+   104→
+   105→@dataclass
+   106→class WorkerProfile:
+   107→    """Profile of a single OpenClaw worker agent.
+   108→
+   109→    Attributes:
+   110→        worker_id:        Unique identifier (e.g. "glm5-worker-1").
+   111→        agent_dir:        Absolute path to the agent's OpenClaw directory.
+   112→        specializations:  List of domain keywords this worker is good at.
+   113→        stats:            Running counts of completed / failed / stalled tasks.
+   114→        trust_score:      Composite trust score from Hermes (0.0–1.0).
+   115→        available:        True when the worker has no in_progress task.
+   116→        pending_queue:    Path to the worker's ``tasks/pending/`` directory.
+   117→        done_queue:       Path to the worker's ``tasks/done/`` directory.
+   118→        failed_queue:     Path to the worker's ``tasks/failed/`` directory.
+   119→    """
+   120→    worker_id: str
+   121→    agent_dir: Path
+   122→    specializations: List[str] = field(default_factory=list)
+   123→    stats: Dict[str, int] = field(default_factory=lambda: {
+   124→        "completed": 0, "failed": 0, "stalled": 0,
+   125→    })
+   126→    trust_score: float = 0.5
+   127→    available: bool = True
+   128→
+   129→    @property
+   130→    def pending_queue(self) -> Path:
+   131→        return self.agent_dir / "tasks" / "pending"
+   132→
+   133→    @property
+   134→    def done_queue(self) -> Path:
+   135→        return self.agent_dir / "tasks" / "done"
+   136→
+   137→    @property
+   138→    def failed_queue(self) -> Path:
+   139→        return self.agent_dir / "tasks" / "failed"
+   140→
+   141→
+   142→# ── Coordinator ────────────────────────────────────────────────────────
+   143→
+   144→class TeamCoordinator:
+   145→    """Central dispatch for the GLM-5 full-stack long-term agentic team.
+   146→
+   147→    Orchestrates:
+   148→      - Hermes experience-based routing (who handles this task?)
+   149→      - mem0 persistent memory (what do we know about similar tasks?)
+   150→      - Skill registry (which platform skill can help?)
+   151→      - OpenClaw file-driven task dispatch (how do we assign work?)
+   152→      - Outcome recording (what did we learn?)
+   153→
+   154→    The coordinator is designed for graceful degradation: if mem0 or
+   155→    skill_adapter are not installed, the system still routes and dispatches
+   156→    tasks using Hermes alone.
+   157→
+   158→    Parameters:
+   159→        project_root:   Root directory of the Nexus OS project.
+   160→        db:             Optional pre-built DatabaseManager.  If *None*, an
+   161→                        in-memory database is created automatically.
+   162→        openclaw_base:  Base directory for OpenClaw agents.  Defaults to
+   163→                        ``~/.openclaw/agents/``.
+   164→    """
+   165→
+   166→    def __init__(
+   167→        self,
+   168→        project_root: str,
+   169→        db: Optional[DatabaseManager] = None,
+   170→        openclaw_base: Optional[str] = None,
+   171→    ) -> None:
+   172→        self.project_root = Path(project_root)
+   173→        self.openclaw_base = Path(openclaw_base) if openclaw_base else DEFAULT_OPENCLAW_BASE
+   174→
+   175→        # ── Database ──
+   176→        if db is not None:
+   177→            self.db = db
+   178→        else:
+   179→            config = DBConfig(
+   180→                db_path=":memory:",
+   181→                passphrase="coordinator-dev",
+   182→                encrypted=False,
+   183→            )
+   184→            self.db = DatabaseManager(config)
+   185→            self.db.setup_schema()
+   186→
+   187→        # ── Hermes Router ──
+   188→        self._init_hermes()
+   189→
+   190→        # ── mem0 Memory (optional) ──
+   191→        self.memory: Optional[Any] = None
+   192→        if Mem0Adapter is not None:
+   193→            try:
+   194→                self.memory = Mem0Adapter(project_root=str(self.project_root))
+   195→                logger.info("mem0 memory adapter initialised")
+   196→            except Exception as exc:
+   197→                logger.warning("mem0 adapter failed to initialise: %s", exc)
+   198→
+   199→        # ── Skill Registry (optional) ──
+   200→        self.skill_registry: Optional[Any] = None
+   201→        if SkillRegistry is not None:
+   202→            try:
+   203→                self.skill_registry = SkillRegistry()
+   204→                logger.info("Skill registry initialised")
+   205→            except Exception as exc:
+   206→                logger.warning("Skill registry failed to initialise: %s", exc)
+   207→
+   208→        # ── Worker Profiles ──
+   209→        self.workers: Dict[str, WorkerProfile] = {}
+   210→        self._load_worker_profiles()
+   211→
+   212→        # ── Task tracking ──
+   213→        self._task_index: Dict[str, Dict[str, Any]] = {}
+   214→
+   215→    # ────────────────────────────────────────────────────────────────────
+   216→    # Initialisation helpers
+   217→    # ────────────────────────────────────────────────────────────────────
+   218→
+   219→    def _init_hermes(self) -> None:
+   220→        """Build a HermesRouter with model profiles matching each worker."""
+   221→        models: List[ModelProfile] = []
+   222→        for wdef in WORKER_DEFINITIONS:
+   223→            mid = wdef["worker_id"]
+   224→            models.append(ModelProfile(
+   225→                model_id=mid,
+   226→                provider="local",
+   227→                cost_per_token=0.0,
+   228→                max_context=8192,
+   229→                capabilities=wdef["specializations"],
+   230→                latency_estimate_ms=500.0,
+   231→                is_local=True,
+   232→                quality_score=0.5,
+   233→            ))
+   234→        self.hermes = HermesRouter(self.db, models=models, quality_threshold=0.4)
+   235→
+   236→    def _load_worker_profiles(self) -> None:
+   237→        """Load WorkerProfile objects for each known worker."""
+   238→        for wdef in WORKER_DEFINITIONS:
+   239→            agent_dir = self.openclaw_base / wdef["agent_dir"]
+   240→            profile = WorkerProfile(
+   241→                worker_id=wdef["worker_id"],
+   242→                agent_dir=agent_dir,
+   243→                specializations=list(wdef["specializations"]),
+   244→            )
+   245→            # Ensure the agent directory structure exists
+   246→            for q in (profile.pending_queue, profile.done_queue, profile.failed_queue):
+   247→                q.mkdir(parents=True, exist_ok=True)
+   248→            self.workers[profile.worker_id] = profile
+   249→
+   250→    # ────────────────────────────────────────────────────────────────────
+   251→    # Public API: Dispatch
+   252→    # ────────────────────────────────────────────────────────────────────
+   253→
+   254→    def dispatch(
+   255→        self,
+   256→        description: str,
+   257→        priority: str = "medium",
+   258→        assigned_to: Optional[str] = None,
+   259→        context: Optional[Dict[str, Any]] = None,
+   260→    ) -> Dict[str, Any]:
+   261→        """Full dispatch pipeline for a new task.
+   262→
+   263→        Steps:
+   264→          1. Query mem0 for relevant past experience
+   265→          2. Classify task via Hermes (domain + complexity)
+   266→          3. Check skill registry for fast-path match
+   267→          4. Select worker based on availability + ability
+   268→          5. Create ``.task.md`` in worker's pending queue
+   269→          6. Record routing decision
+   270→
+   271→        Returns:
+   272→            ``dict`` with keys: ``task_id``, ``assigned_worker``,
+   273→            ``hermes_decision``, ``skill_match``, ``status``.
+   274→        """
+   275→        task_id = self._generate_task_id()
+   276→
+   277→        # 1. Memory recall
+   278→        memories = self._query_memory(description)
+   279→
+   280→        # 2. Hermes classification
+   281→        hermes_decision = self._route_via_hermes(task_id, description, context)
+   282→
+   283→        # 3. Skill registry check
+   284→        skill_match = self._check_skill_registry(description, hermes_decision)
+   285→
+   286→        # 4. Worker selection
+   287→        worker = self._select_worker(
+   288→            description=description,
+   289→            domain=hermes_decision.domain,
+   290→            assigned_to=assigned_to,
+   291→        )
+   292→
+   293→        # 5. Create .task.md file
+   294→        task_file = self._create_task_file(
+   295→            task_id=task_id,
+   296→            description=description,
+   297→            priority=priority,
+   298→            assigned_to=worker.worker_id,
+   299→            hermes_decision=hermes_decision,
+   300→            skill_match=skill_match,
+   301→            memories=memories,
+   302→            context=context,
+   303→        )
+   304→
+   305→        # 6. Track the task
+   306→        self._task_index[task_id] = {
+   307→            "task_id": task_id,
+   308→            "assigned_worker": worker.worker_id,
+   309→            "task_file": str(task_file),
+   310→            "hermes_decision": hermes_decision,
+   311→            "skill_match": skill_match,
+   312→            "status": "pending",
+   313→            "created_at": datetime.now(timezone.utc).isoformat(),
+   314→            "priority": priority,
+   315→        }
+   316→
+   317→        logger.info(
+   318→            "Dispatched %s → %s [%s/%s] score=%.2f",
+   319→            task_id, worker.worker_id,
+   320→            hermes_decision.domain.value, hermes_decision.complexity.value,
+   321→            hermes_decision.score,
+   322→        )
+   323→
+   324→        return {
+   325→            "task_id": task_id,
+   326→            "assigned_worker": worker.worker_id,
+   327→            "hermes_decision": {
+   328→                "domain": hermes_decision.domain.value,
+   329→                "complexity": hermes_decision.complexity.value,
+   330→                "selected_model": hermes_decision.selected_model,
+   331→                "score": hermes_decision.score,
+   332→                "reason": hermes_decision.reason,
+   333→                "matched_skill": hermes_decision.matched_skill,
+   334→            },
+   335→            "skill_match": skill_match,
+   336→            "status": "pending",
+   337→            "memories_found": len(memories),
+   338→            "task_file": str(task_file),
+   339→        }
+   340→
+   341→    def dispatch_with_skill(
+   342→        self,
+   343→        skill_id: str,
+   344→        params: Dict[str, Any],
+   345→        description: str = "",
+   346→    ) -> Dict[str, Any]:
+   347→        """Dispatch a task that should use a specific platform skill.
+   348→
+   349→        If the skill registry is available, the skill is invoked directly.
+   350→        Otherwise, the task is dispatched as a normal task with the skill
+   351→        ID noted in metadata.
+   352→
+   353→        Parameters:
+   354→            skill_id:     Identifier of the platform skill to use.
+   355→            params:       Parameters to pass to the skill.
+   356→            description:  Optional human-readable description of the task.
+   357→
+   358→        Returns:
+   359→            Same shape as :meth:`dispatch`.
+   360→        """
+   361→        description = description or f"Execute skill: {skill_id}"
+   362→        result = self.dispatch(
+   363→            description=description,
+   364→            priority="high",
+   365→            context={"skill_id": skill_id, "skill_params": params},
+   366→        )
+   367→        result["skill_match"] = skill_id
+   368→        result["dispatch_mode"] = "skill-driven"
+   369→        return result
+   370→
+   371→    # ────────────────────────────────────────────────────────────────────
+   372→    # Public API: Status & Collection
+   373→    # ────────────────────────────────────────────────────────────────────
+   374→
+   375→    def check_status(self, task_id: str) -> Dict[str, Any]:
+   376→        """Check the status of a dispatched task across all worker queues.
+   377→
+   378→        Looks for the task file in pending, done, and failed directories
+   379→        of all workers.  Returns the current status or ``"unknown"``.
+   380→
+   381→        Returns:
+   382→            ``dict`` with ``task_id``, ``status``, ``worker``, and
+   383→            optional ``task_file`` path.
+   384→        """
+   385→        # Check in-memory index first — but verify the file still exists
+   386→        # at the indexed path (it may have been moved to done/failed by a worker).
+   387→        if task_id in self._task_index:
+   388→            entry = self._task_index[task_id]
+   389→            indexed_path = entry.get("task_file", "")
+   390→            if indexed_path and Path(indexed_path).exists():
+   391→                file_status = self._scan_task_file_status(indexed_path)
+   392→                if file_status != "unknown":
+   393→                    entry["status"] = file_status
+   394→                    return entry
+   395→
+   396→        # Scan all workers for the task file in any queue
+   397→        for worker in self.workers.values():
+   398→            status = self._find_task_in_worker(task_id, worker)
+   399→            if status != "unknown":
+   400→                # Update the index with the actual location
+   401→                if task_id in self._task_index:
+   402→                    self._task_index[task_id]["status"] = status
+   403→                return {
+   404→                    "task_id": task_id,
+   405→                    "status": status,
+   406→                    "worker": worker.worker_id,
+   407→                }
+   408→
+   409→        return {"task_id": task_id, "status": "unknown"}
+   410→
+   411→    def collect_results(self, since: Optional[str] = None) -> List[Dict[str, Any]]:
+   412→        """Collect all completed task results from worker done queues.
+   413→
+   414→        Parameters:
+   415→            since:  ISO timestamp string.  Only results completed after
+   416→                    this time are returned.  If *None*, all results are
+   417→                    returned.
+   418→
+   419→        Returns:
+   420→            List of result dicts, each containing ``task_id``, ``worker``,
+   421→            ``task_file``, and the parsed task content.
+   422→        """
+   423→        results: List[Dict[str, Any]] = []
+   424→        since_dt = None
+   425→        if since:
+   426→            try:
+   427→                since_dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
+   428→            except ValueError:
+   429→                logger.warning("Invalid 'since' timestamp: %s", since)
+   430→
+   431→        for worker in self.workers.values():
+   432→            for task_file in sorted(worker.done_queue.glob("*.task.md")):
+   433→                parsed = self._parse_task_file(task_file)
+   434→                if not parsed:
+   435→                    continue
+   436→
+   437→                # Filter by timestamp if requested
+   438→                if since_dt:
+   439→                    created_str = parsed.get("created", "")
+   440→                    if created_str:
+   441→                        try:
+   442→                            created_dt = datetime.fromisoformat(
+   443→                                created_str.replace("Z", "+00:00")
+   444→                            )
+   445→                            if created_dt < since_dt:
+   446→                                continue
+   447→                        except ValueError:
+   448→                            pass
+   449→
+   450→                results.append({
+   451→                    "task_id": parsed.get("id", task_file.stem),
+   452→                    "worker": worker.worker_id,
+   453→                    "task_file": str(task_file),
+   454→                    "title": parsed.get("title", ""),
+   455→                    "status": parsed.get("status", "completed"),
+   456→                    "priority": parsed.get("priority", "unknown"),
+   457→                })
+   458→
+   459→        return results
+   460→
+   461→    def get_team_status(self) -> Dict[str, Any]:
+   462→        """Return full team status: workers, queues, hermes stats, mem0 stats.
+   463→
+   464→        Returns:
+   465→            Comprehensive status dict with nested worker info, Hermes
+   466→            statistics, and memory adapter status.
+   467→        """
+   468→        worker_status = {}
+   469→        for wid, profile in self.workers.items():
+   470→            pending = self._count_files(profile.pending_queue, "*.task.md")
+   471→            done = self._count_files(profile.done_queue, "*.task.md")
+   472→            failed = self._count_files(profile.failed_queue, "*.task.md")
+   473→            stalled = self._find_stalled_tasks(profile)
+   474→            profile.stats["stalled"] = len(stalled)
+   475→
+   476→            worker_status[wid] = {
+   477→                "available": profile.available,
+   478→                "pending": pending,
+   479→                "done": done,
+   480→                "failed": failed,
+   481→                "stalled": len(stalled),
+   482→                "trust_score": profile.trust_score,
+   483→                "specializations": profile.specializations,
+   484→                "agent_dir": str(profile.agent_dir),
+   485→            }
+   486→
+   487→        return {
+   488→            "workers": worker_status,
+   489→            "hermes": self.hermes.get_stats(),
+   490→            "memory_available": self.memory is not None,
+   491→            "skill_registry_available": self.skill_registry is not None,
+   492→            "total_tasks_dispatched": len(self._task_index),
+   493→            "openclaw_base": str(self.openclaw_base),
+   494→            "project_root": str(self.project_root),
+   495→        }
+   496→
+   497→    # ────────────────────────────────────────────────────────────────────
+   498→    # Public API: Outcome Recording
+   499→    # ────────────────────────────────────────────────────────────────────
+   500→
+   501→    def record_outcome(
+   502→        self,
+   503→        task_id: str,
+   504→        success: bool,
+   505→        duration_ms: float,
+   506→        result_summary: Optional[str] = None,
+   507→    ) -> Dict[str, Any]:
+   508→        """Record task outcome to both Hermes and mem0.
+   509→
+   510→        Parameters:
+   511→            task_id:        The task identifier.
+   512→            success:        Whether the task completed successfully.
+   513→            duration_ms:    Execution time in milliseconds.
+   514→            result_summary: Optional human-readable result description.
+   515→
+   516→        Returns:
+   517→            Confirmation dict with ``task_id``, ``hermes_recorded``,
+   518→            ``mem0_recorded``.
+   519→        """
+   520→        hermes_recorded = False
+   521→        mem0_recorded = False
+   522→
+   523→        # Record to Hermes
+   524→        try:
+   525→            self.hermes.record_outcome(task_id, success, duration_ms)
+   526→            hermes_recorded = True
+   527→        except Exception as exc:
+   528→            logger.warning("Hermes outcome recording failed: %s", exc)
+   529→
+   530→        # Update worker trust score
+   531→        entry = self._task_index.get(task_id)
+   532→        if entry:
+   533→            worker_id = entry.get("assigned_worker")
+   534→            if worker_id and worker_id in self.workers:
+   535→                worker = self.workers[worker_id]
+   536→                if success:
+   537→                    worker.stats["completed"] += 1
+   538→                    # Incremental trust: move 10% toward 1.0
+   539→                    worker.trust_score = worker.trust_score * 0.9 + 0.1
+   540→                else:
+   541→                    worker.stats["failed"] += 1
+   542→                    # Decremental trust: move 20% toward 0.0
+   543→                    worker.trust_score = worker.trust_score * 0.8
+   544→
+   545→        # Record to mem0
+   546→        if self.memory is not None and result_summary:
+   547→            try:
+   548→                outcome_text = (
+   549→                    f"Task {task_id}: {'SUCCESS' if success else 'FAILURE'}. "
+   550→                    f"Duration: {duration_ms:.0f}ms. {result_summary}"
+   551→                )
+   552→                # Use the add method; degrade gracefully if API differs
+   553→                if hasattr(self.memory, "add"):
+   554→                    self.memory.add(outcome_text, user_id="coordinator")
+   555→                elif hasattr(self.memory, "store"):
+   556→                    self.memory.store(outcome_text, metadata={"task_id": task_id})
+   557→                mem0_recorded = True
+   558→            except Exception as exc:
+   559→                logger.warning("mem0 outcome recording failed: %s", exc)
+   560→
+   561→        # Update in-memory index
+   562→        if entry:
+   563→            entry["status"] = "completed" if success else "failed"
+   564→            entry["outcome"] = {
+   565→                "success": success,
+   566→                "duration_ms": duration_ms,
+   567→                "recorded_at": datetime.now(timezone.utc).isoformat(),
+   568→            }
+   569→
+   570→        logger.info(
+   571→            "Outcome recorded: %s → success=%s hermes=%s mem0=%s",
+   572→            task_id, success, hermes_recorded, mem0_recorded,
+   573→        )
+   574→
+   575→        return {
+   576→            "task_id": task_id,
+   577→            "success": success,
+   578→            "duration_ms": duration_ms,
+   579→            "hermes_recorded": hermes_recorded,
+   580→            "mem0_recorded": mem0_recorded,
+   581→        }
+   582→
+   583→    # ────────────────────────────────────────────────────────────────────
+   584→    # Public API: Foreman Patrol
+   585→    # ────────────────────────────────────────────────────────────────────
+   586→
+   587→    def run_foreman_patrol(self) -> Dict[str, Any]:
+   588→        """Execute one foreman patrol cycle.
+   589→
+   590→        Checks all workers for:
+   591→          - Stalled tasks (in_progress longer than STALL_THRESHOLD)
+   592→          - Load imbalance (difference > 2 pending tasks between workers)
+   593→          - Failed task accumulation
+   594→
+   595→        Returns:
+   596→            Patrol report dict with ``timestamp``, ``stalled_tasks``,
+   597→            ``load_balanced``, ``recommendations``.
+   598→        """
+   599→        timestamp = datetime.now(timezone.utc)
+   600→        stalled_tasks: List[Dict[str, str]] = []
+   601→        pending_counts: Dict[str, int] = {}
+   602→        failed_counts: Dict[str, int] = {}
+   603→
+   604→        for wid, worker in self.workers.items():
+   605→            pending = self._count_files(worker.pending_queue, "*.task.md")
+   606→            failed = self._count_files(worker.failed_queue, "*.task.md")
+   607→            pending_counts[wid] = pending
+   608→            failed_counts[wid] = failed
+   609→
+   610→            # Check for stalled tasks
+   611→            stalled = self._find_stalled_tasks(worker)
+   612→            for task_name in stalled:
+   613→                stalled_tasks.append({
+   614→                    "worker": wid,
+   615→                    "task_file": task_name,
+   616→                    "action": "flagged_for_reassignment",
+   617→                })
+   618→
+   619→        # Load balance check
+   620→        counts = sorted(pending_counts.values())
+   621→        load_balanced = True
+   622→        if len(counts) >= 2 and (counts[-1] - counts[0]) > 2:
+   623→            load_balanced = False
+   624→
+   625→        # Recommendations
+   626→        recommendations: List[str] = []
+   627→        if stalled_tasks:
+   628→            recommendations.append(
+   629→                f"{len(stalled_tasks)} stalled task(s) detected — consider reassignment"
+   630→            )
+   631→        if not load_balanced:
+   632→            busiest = max(pending_counts, key=pending_counts.get)
+   633→            lightest = min(pending_counts, key=pending_counts.get)
+   634→            recommendations.append(
+   635→                f"Load imbalance: {busiest} ({pending_counts[busiest]} pending) vs "
+   636→                f"{lightest} ({pending_counts[lightest]} pending) — rebalance recommended"
+   637→            )
+   638→        for wid, fc in failed_counts.items():
+   639→            if fc > 3:
+   640→                recommendations.append(
+   641→                    f"Worker {wid} has {fc} failed tasks — investigate"
+   642→                )
+   643→
+   644→        report = {
+   645→            "timestamp": timestamp.isoformat(),
+   646→            "stalled_tasks": stalled_tasks,
+   647→            "load_balanced": load_balanced,
+   648→            "pending_counts": pending_counts,
+   649→            "failed_counts": failed_counts,
+   650→            "recommendations": recommendations,
+   651→        }
+   652→
+   653→        logger.info(
+   654→            "Patrol complete: stalled=%d balanced=%s",
+   655→            len(stalled_tasks), load_balanced,
+   656→        )
+   657→        return report
+   658→
+   659→    # ────────────────────────────────────────────────────────────────────
+   660→    # Public API: Worker Cycle
+   661→    # ────────────────────────────────────────────────────────────────────
+   662→
+   663→    def run_worker_cycle(self, worker_id: Optional[str] = None) -> Dict[str, Any]:
+   664→        """Poll and report on pending tasks for one or all workers.
+   665→
+   666→        This is a simulation/monitoring method.  Real task execution is
+   667→        handled by the ``GLM5Worker`` cron process.  This method reports
+   668→        what *would* be processed.
+   669→
+   670→        Parameters:
+   671→            worker_id:  If provided, only check this worker.  Otherwise
+   672→                        check all workers.
+   673→
+   674→        Returns:
+   675→            Dict with ``tasks_found``, ``workers_checked``, and per-worker
+   676→            pending task details.
+   677→        """
+   678→        targets = (
+   679→            {worker_id: self.workers[worker_id]}
+   680→            if worker_id and worker_id in self.workers
+   681→            else self.workers
+   682→        )
+   683→
+   684→        total_found = 0
+   685→        worker_details: Dict[str, List[Dict[str, str]]] = {}
+   686→
+   687→        for wid, worker in targets.items():
+   688→            pending_tasks: List[Dict[str, str]] = []
+   689→            for task_file in sorted(worker.pending_queue.glob("*.task.md")):
+   690→                parsed = self._parse_task_file(task_file)
+   691→                if parsed:
+   692→                    pending_tasks.append({
+   693→                        "task_id": parsed.get("id", task_file.stem),
+   694→                        "title": parsed.get("title", ""),
+   695→                        "priority": parsed.get("priority", "medium"),
+   696→                        "status": parsed.get("status", "pending"),
+   697→                    })
+   698→            total_found += len(pending_tasks)
+   699→            worker_details[wid] = pending_tasks
+   700→
+   701→        return {
+   702→            "tasks_found": total_found,
+   703→            "workers_checked": list(targets.keys()),
+   704→            "workers": worker_details,
+   705→        }
+   706→
+   707→    # ────────────────────────────────────────────────────────────────────
+   708→    # Public API: Cron Setup
+   709→    # ────────────────────────────────────────────────────────────────────
+   710→
+   711→    def setup_cron_jobs(self) -> str:
+   712→        """Generate crontab configuration for automated patrol and worker cycles.
+   713→
+   714→        Creates a cron schedule with:
+   715→          - Foreman patrol every 30 minutes
+   716→          - Worker cycle every 5 minutes
+   717→
+   718→        Returns:
+   719→            The generated crontab lines as a string.
+   720→        """
+   721→        python_path = "python3"
+   722→        coordinator_module = "nexus_os.team.coordinator"
+   723→        project_src = self.project_root / "src"
+   724→
+   725→        cron_lines = [
+   726→            "# Nexus OS Team Coordinator — Automated Schedules",
+   727→            f"# Generated: {datetime.now(timezone.utc).isoformat()}",
+   728→            "",
+   729→            "# Foreman patrol every 30 minutes",
+   730→            f"*/30 * * * * cd {self.project_root} && PYTHONPATH={project_src} "
+   731→            f"{python_path} -m {coordinator_module} --patrol",
+   732→            "",
+   733→            "# Worker poll cycle every 5 minutes",
+   734→            f"*/5 * * * * cd {self.project_root} && PYTHONPATH={project_src} "
+   735→            f"{python_path} -m {coordinator_module} --worker-cycle",
+   736→            "",
+   737→        ]
+   738→
+   739→        cron_content = "\n".join(cron_lines)
+   740→        logger.info("Cron configuration generated (%d lines)", len(cron_lines))
+   741→        return cron_content
+   742→
+   743→    # ────────────────────────────────────────────────────────────────────
+   744→    # Internal: Routing & Worker Selection
+   745→    # ────────────────────────────────────────────────────────────────────
+   746→
+   747→    def _route_via_hermes(
+   748→        self,
+   749→        task_id: str,
+   750→        description: str,
+   751→        context: Optional[Dict[str, Any]] = None,
+   752→    ) -> RoutingDecision:
+   753→        """Route a task through the Hermes 3-layer router.
+   754→
+   755→        Falls back to a basic domain classification if Hermes routing
+   756→        fails (defensive programming).
+   757→        """
+   758→        try:
+   759→            decision = self.hermes.route(task_id, description, context)
+   760→            return decision
+   761→        except Exception as exc:
+   762→            logger.warning("Hermes routing failed, using fallback: %s", exc)
+   763→            # Fallback: basic classification
+   764→            from nexus_os.engine.hermes import TaskClassifier
+   765→            classifier = TaskClassifier()
+   766→            domain, complexity = classifier.classify(description, context)
+   767→            domain_val = domain.value if hasattr(domain, "value") else domain
+   768→            return RoutingDecision(
+   769→                selected_model=DOMAIN_WORKER_MAP.get(domain_val, "glm5-worker-1"),
+   770→                fallback_models=[],
+   771→                domain=domain,
+   772→                reason="Fallback routing (Hermes unavailable)",
+   773→            )
+   774→
+   775→    def _select_worker(
+   776→        self,
+   777→        description: str,
+   778→        domain: TaskDomain,
+   779→        assigned_to: Optional[str] = None,
+   780→    ) -> WorkerProfile:
+   781→        """Select the best available worker for a task.
+   782→
+   783→        Selection priority:
+   784→          1. Explicit ``assigned_to`` override
+   785→          2. Hermes-selected model mapped to worker
+   786→          3. Domain-based default mapping
+   787→          4. Least-loaded worker (load balancing)
+   788→        """
+   789→        # 1. Explicit assignment
+   790→        if assigned_to and assigned_to in self.workers:
+   791→            return self.workers[assigned_to]
+   792→
+   793→        # 2. Hermes model → worker mapping
+   794→        hermes_models = self.workers.keys()
+   795→        # (already handled by Hermes routing — selected_model IS the worker)
+   796→
+   797→        # 3. Domain-based mapping
+   798→        domain_worker = DOMAIN_WORKER_MAP.get(domain.value)
+   799→        if domain_worker and domain_worker in self.workers:
+   800→            return self.workers[domain_worker]
+   801→
+   802→        # 4. Least-loaded worker
+   803→        return self._select_least_loaded_worker()
+   804→
+   805→    def _select_least_loaded_worker(self) -> WorkerProfile:
+   806→        """Select the worker with the fewest pending tasks."""
+   807→        best_worker = None
+   808→        best_count = float("inf")
+   809→        for worker in self.workers.values():
+   810→            count = self._count_files(worker.pending_queue, "*.task.md")
+   811→            if count < best_count:
+   812→                best_count = count
+   813→                best_worker = worker
+   814→        return best_worker or list(self.workers.values())[0]
+   815→
+   816→    # ────────────────────────────────────────────────────────────────────
+   817→    # Internal: Memory & Skill Queries
+   818→    # ────────────────────────────────────────────────────────────────────
+   819→
+   820→    def _query_memory(self, description: str) -> List[Dict[str, Any]]:
+   821→        """Query mem0 for relevant past experience related to the description.
+   822→
+   823→        Returns:
+   824→            List of memory records.  Empty list if mem0 is unavailable.
+   825→        """
+   826→        if self.memory is None:
+   827→            return []
+   828→
+   829→        try:
+   830→            if hasattr(self.memory, "search"):
+   831→                results = self.memory.search(description, limit=5)
+   832→                return results if isinstance(results, list) else []
+   833→            elif hasattr(self.memory, "query"):
+   834→                results = self.memory.query(description)
+   835→                return results if isinstance(results, list) else []
+   836→            return []
+   837→        except Exception as exc:
+   838→            logger.warning("mem0 query failed: %s", exc)
+   839→            return []
+   840→
+   841→    def _check_skill_registry(
+   842→        self,
+   843→        description: str,
+   844→        hermes_decision: RoutingDecision,
+   845→    ) -> Optional[str]:
+   846→        """Check the skill registry for a fast-path match.
+   847→
+   848→        Returns:
+   849→            Skill ID if a match is found, ``None`` otherwise.
+   850→        """
+   851→        if self.skill_registry is None:
+   852→            return None
+   853→
+   854→        try:
+   855→            if hasattr(self.skill_registry, "find_skill"):
+   856→                match = self.skill_registry.find_skill(description)
+   857→                if match:
+   858→                    return getattr(match, "skill_id", str(match))
+   859→            elif hasattr(self.skill_registry, "search"):
+   860→                results = self.skill_registry.search(description)
+   861→                if results:
+   862→                    return results[0]
+   863→            return None
+   864→        except Exception as exc:
+   865→            logger.warning("Skill registry check failed: %s", exc)
+   866→            return None
+   867→
+   868→    # ────────────────────────────────────────────────────────────────────
+   869→    # Internal: Task File Operations
+   870→    # ────────────────────────────────────────────────────────────────────
+   871→
+   872→    def _generate_task_id(self) -> str:
+   873→        """Generate a unique task ID in the format ``task-YYYY-MM-DD-NNN``."""
+   874→        now = datetime.now(timezone.utc)
+   875→        date_part = now.strftime("%Y-%m-%d")
+   876→        # Use a short UUID suffix for uniqueness
+   877→        suffix = uuid.uuid4().hex[:6]
+   878→        return f"task-{date_part}-{suffix}"
+   879→
+   880→    def _create_task_file(
+   881→        self,
+   882→        task_id: str,
+   883→        description: str,
+   884→        priority: str,
+   885→        assigned_to: str,
+   886→        hermes_decision: RoutingDecision,
+   887→        skill_match: Optional[str],
+   888→        memories: Optional[List[Dict[str, Any]]] = None,
+   889→        context: Optional[Dict[str, Any]] = None,
+   890→    ) -> Path:
+   891→        """Create a ``.task.md`` file in the worker's pending queue.
+   892→
+   893→        The file uses YAML frontmatter for metadata and Markdown for the
+   894→        task body.
+   895→
+   896→        Returns:
+   897→            Path to the created task file.
+   898→        """
+   899→        worker = self.workers[assigned_to]
+   900→        task_file = worker.pending_queue / f"{task_id}.task.md"
+   901→
+   902→        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+   903→
+   904→        # Build frontmatter
+   905→        frontmatter_lines = [
+   906→            "---",
+   907→            f"id: {task_id}",
+   908→            f"type: {hermes_decision.domain.value}-implementation",
+   909→            f"priority: {priority}",
+   910→            f"assigned_to: {assigned_to}",
+   911→            f"status: pending",
+   912→            f"created: {timestamp}",
+   913→            f"hermes_domain: {hermes_decision.domain.value}",
+   914→            f"hermes_complexity: {hermes_decision.complexity.value}",
+   915→            f"hermes_score: {hermes_decision.score:.2f}",
+   916→            f"skill_match: {skill_match or 'null'}",
+   917→            f"dependencies: {context.get('dependencies', '') if context else ''}",
+   918→            "---",
+   919→        ]
+   920→
+   921→        # Build body
+   922→        body_lines = [
+   923→            "",
+   924→            f"# {description.split('.')[0] if description else task_id}",
+   925→            "",
+   926→            description,
+   927→        ]
+   928→
+   929→        # Append relevant memories as context
+   930→        if memories:
+   931→            body_lines.append("")
+   932→            body_lines.append("## Relevant Past Experience")
+   933→            body_lines.append("")
+   934→            for i, mem in enumerate(memories[:5], 1):
+   935→                mem_text = str(mem.get("content", mem.get("text", mem)))[:300]
+   936→                body_lines.append(f"{i}. {mem_text}")
+   937→                body_lines.append("")
+   938→
+   939→        content = "\n".join(frontmatter_lines) + "\n".join(body_lines) + "\n"
+   940→        task_file.write_text(content)
+   941→
+   942→        return task_file
+   943→
+   944→    def _parse_task_file(self, filepath: Path) -> Optional[Dict[str, str]]:
+   945→        """Parse a ``.task.md`` file's frontmatter and extract title.
+   946→
+   947→        Returns:
+   948→            Dict with parsed frontmatter fields and ``title`` from the
+   949→            first H1 heading.  Returns *None* if the file cannot be read.
+   950→        """
+   951→        try:
+   952→            text = filepath.read_text()
+   953→        except Exception:
+   954→            return None
+   955→
+   956→        frontmatter: Dict[str, str] = {}
+   957→        match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
+   958→        if match:
+   959→            inner = match.group(1).strip()
+   960→            for line in inner.split("\n"):
+   961→                line = line.strip()
+   962→                if ":" in line:
+   963→                    key, val = line.split(":", 1)
+   964→                    frontmatter[key.strip()] = val.strip()
+   965→            body = text[match.end():].strip()
+   966→        else:
+   967→            body = text
+   968→
+   969→        # Extract title from first H1 heading
+   970→        title_match = re.search(r"^#\s+(.+)$", body, re.MULTILINE)
+   971→        title = title_match.group(1).strip() if title_match else frontmatter.get("id", filepath.stem)
+   972→
+   973→        return {
+   974→            "id": frontmatter.get("id", filepath.stem),
+   975→            "title": title,
+   976→            "type": frontmatter.get("type", ""),
+   977→            "priority": frontmatter.get("priority", "medium"),
+   978→            "assigned_to": frontmatter.get("assigned_to", ""),
+   979→            "created": frontmatter.get("created", ""),
+   980→            "status": frontmatter.get("status", "pending"),
+   981→            "hermes_domain": frontmatter.get("hermes_domain", ""),
+   982→            "hermes_complexity": frontmatter.get("hermes_complexity", ""),
+   983→            "hermes_score": frontmatter.get("hermes_score", ""),
+   984→            "skill_match": frontmatter.get("skill_match", ""),
+   985→            "dependencies": frontmatter.get("dependencies", ""),
+   986→        }
+   987→
+   988→    def _scan_task_file_status(self, task_file_path: str) -> str:
+   989→        """Determine status by checking which queue a task file resides in.
+   990→
+   991→        Returns:
+   992→            One of ``"pending"``, ``"completed"``, ``"failed"``, or
+   993→            ``"unknown"``.
+   994→        """
+   995→        if not task_file_path:
+   996→            return "unknown"
+   997→        path = Path(task_file_path)
+   998→        if "pending" in path.parts:
+   999→            return "pending"
+  1000→        if "done" in path.parts:
+  1001→            return "completed"
+  1002→        if "failed" in path.parts:
+  1003→            return "failed"
+  1004→        return "unknown"
+  1005→
+  1006→    def _find_task_in_worker(self, task_id: str, worker: WorkerProfile) -> str:
+  1007→        """Search for a task file in a worker's queues.
+  1008→
+  1009→        Returns:
+  1010→            ``"pending"``, ``"completed"``, ``"failed"``, or ``"unknown"``.
+  1011→        """
+  1012→        filename = f"{task_id}.task.md"
+  1013→
+  1014→        if (worker.pending_queue / filename).exists():
+  1015→            return "pending"
+  1016→        if (worker.done_queue / filename).exists():
+  1017→            return "completed"
+  1018→        if (worker.failed_queue / filename).exists():
+  1019→            return "failed"
+  1020→        return "unknown"
+  1021→
+  1022→    # ────────────────────────────────────────────────────────────────────
+  1023→    # Internal: Stalled Task Detection
+  1024→    # ────────────────────────────────────────────────────────────────────
+  1025→
+  1026→    def _find_stalled_tasks(self, worker: WorkerProfile) -> List[str]:
+  1027→        """Find tasks that have been in_progress longer than STALL_THRESHOLD.
+  1028→
+  1029→        Returns:
+  1030→            List of task filenames that appear stalled.
+  1031→        """
+  1032→        stalled: List[str] = []
+  1033→        now = datetime.now(timezone.utc)
+  1034→
+  1035→        for task_file in worker.pending_queue.glob("*.task.md"):
+  1036→            parsed = self._parse_task_file(task_file)
+  1037→            if not parsed or parsed.get("status") != "in_progress":
+  1038→                continue
+  1039→
+  1040→            created_str = parsed.get("created", "")
+  1041→            if not created_str:
+  1042→                continue
+  1043→
+  1044→            try:
+  1045→                created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+  1046→                if now - created_dt > STALL_THRESHOLD:
+  1047→                    stalled.append(task_file.name)
+  1048→            except ValueError:
+  1049→                pass
+  1050→
+  1051→        return stalled
+  1052→
+  1053→    # ────────────────────────────────────────────────────────────────────
+  1054→    # Internal: Utilities
+  1055→    # ────────────────────────────────────────────────────────────────────
+  1056→
+  1057→    @staticmethod
+  1058→    def _count_files(directory: Path, pattern: str) -> int:
+  1059→        """Count files matching a glob pattern in a directory."""
+  1060→        if not directory.exists():
+  1061→            return 0
+  1062→        return len(list(directory.glob(pattern)))
+  1063→
+  1064→
+  1065→# ── CLI entry point for cron ───────────────────────────────────────────
+  1066→
+  1067→if __name__ == "__main__":
+  1068→    import sys
+  1069→
+  1070→    # Minimal CLI for cron invocation
+  1071→    project = sys.argv[1] if len(sys.argv) > 1 else "."
+  1072→    mode = sys.argv[2] if len(sys.argv) > 2 else "--patrol"
+  1073→
+  1074→    coordinator = TeamCoordinator(project_root=project)
+  1075→
+  1076→    if mode == "--patrol":
+  1077→        report = coordinator.run_foreman_patrol()
+  1078→        print(f"[COORDINATOR] Patrol: {report['stalled_tasks'].__len__()} stalled")
+  1079→    elif mode == "--worker-cycle":
+  1080→        cycle = coordinator.run_worker_cycle()
+  1081→        print(f"[COORDINATOR] Cycle: {cycle['tasks_found']} pending")
+  1082→    else:
+  1083→        print(f"Unknown mode: {mode}", file=sys.stderr)
+  1084→        sys.exit(1)
+  1085→

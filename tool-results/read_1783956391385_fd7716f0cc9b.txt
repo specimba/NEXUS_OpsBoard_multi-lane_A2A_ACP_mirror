@@ -1,0 +1,681 @@
+     1→"""
+     2→bridge/server.py â€” Nexus OS A2A Bridge Server
+     3→
+     4→Production-hardened FastAPI endpoint for agent-to-agent communication.
+     5→Implements JSON-RPC 2.0 over HTTP with:
+     6→
+     7→  1. HMAC-SHA256 authentication via SecretStore
+     8→  2. KAIJU 4-variable authorization via NexusGovernor
+     9→  3. Task execution via TaskExecutor
+    10→  4. Structured JSON-RPC 2.0 responses
+    11→  5. Comprehensive error handling
+    12→
+    13→Endpoints:
+    14→  POST /tasks/submit  â€” Submit task for execution
+    15→  POST /tasks/status  â€” Query task status
+    16→  POST /vault/read    â€” Query Vault memory
+    17→  POST /vault/write   â€” Write to Vault memory
+    18→  POST /              â€” JSON-RPC 2.0 router (dispatches to above)
+    19→"""
+    20→
+    21→import json
+    22→import time
+    23→import uuid
+    24→import logging
+    25→from typing import Dict, Any, Optional, List
+    26→from dataclasses import dataclass, field
+    27→
+    28→logger = logging.getLogger(__name__)
+    29→
+    30→
+    31→# â”€â”€ Exceptions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    32→
+    33→class BridgeError(Exception):
+    34→    """Base exception for Bridge errors."""
+    35→    def __init__(self, code: int, message: str, http_status: int = 500):
+    36→        self.code = code
+    37→        self.message = message
+    38→        self.http_status = http_status
+    39→        super().__init__(message)
+    40→
+    41→
+    42→class AuthError(BridgeError):
+    43→    def __init__(self, message: str):
+    44→        super().__init__(401, message, http_status=401)
+    45→
+    46→
+    47→class ForbiddenError(BridgeError):
+    48→    def __init__(self, message: str):
+    49→        super().__init__(403, message, http_status=403)
+    50→
+    51→
+    52→class HeldError(BridgeError):
+    53→    def __init__(self, message: str, trace_id: str):
+    54→        super().__init__(202, message, http_status=202)
+    55→        self.hold_ticket = trace_id
+    56→
+    57→
+    58→class ParseError(BridgeError):
+    59→    def __init__(self, message: str):
+    60→        super().__init__(32700, message, http_status=400)
+    61→
+    62→
+    63→# â”€â”€ Request Models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    64→
+    65→@dataclass
+    66→class BridgeRequest:
+    67→    """Parsed Bridge request with validated headers and body."""
+    68→    agent_id: str
+    69→    project_id: str
+    70→    trace_id: str
+    71→    signature: str
+    72→    lineage_id: Optional[str]
+    73→    payload: Dict[str, Any]
+    74→    raw_payload: str
+    75→    method: str  # "tasks/submit", "tasks/status", "vault/read", "vault/write"
+    76→    kaiju: Dict[str, str] = field(default_factory=dict)
+    77→
+    78→
+    79→# â”€â”€ JSON-RPC Response Builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    80→
+    81→def jsonrpc_result(result: Any, trace_id: Optional[str] = None, input_tokens: int = 0, output_tokens: int = 0) -> Dict[str, Any]:
+    82→    return {
+    83→        "jsonrpc": "2.0",
+    84→        "result": result,
+    85→        "trace_id": trace_id,
+    86→        "x-nexus-input-tokens": input_tokens,
+    87→        "x-nexus-output-tokens": output_tokens,
+    88→    }
+    89→
+    90→def jsonrpc_error(code: int, message: str, trace_id: Optional[str] = None, data: Any = None) -> Dict[str, Any]:
+    91→    return {
+    92→        "jsonrpc": "2.0",
+    93→        "error": {
+    94→            "code": code,
+    95→            "message": message,
+    96→            "data": data,
+    97→        },
+    98→        "trace_id": trace_id,
+    99→    }
+   100→
+   101→
+   102→# â”€â”€ Bridge Server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   103→
+   104→class BridgeServer:
+   105→    """
+   106→    Nexus OS A2A Bridge Server.
+   107→
+   108→    Can be used standalone (via handle_request()) or mounted on FastAPI/ASGI.
+   109→    All public methods take raw HTTP inputs and return (status_code, response_dict).
+   110→    TokenGuard integration: tracks token usage and adds X-Nexus-Input-Tokens,
+   111→    X-Nexus-Output-Tokens headers to FastAPI responses.
+   112→    """
+   113→
+   114→    def __init__(
+   115→        self,
+   116→        secret_store=None,
+   117→        governor=None,
+   118→        executor=None,
+   119→        token_guard=None,
+   120→    ):
+   121→        from nexus_os.bridge.secrets import SecretStore
+   122→        from nexus_os.engine.executor import MockExecutor
+   123→        from nexus_os.monitoring.token_guard import TokenGuard
+   124→
+   125→        self.secret_store = secret_store or SecretStore()
+   126→        self.governor = governor
+   127→        self.executor = executor or MockExecutor()
+   128→        self.token_guard = token_guard or TokenGuard()
+   129→        self._task_results: Dict[str, Any] = {}
+   130→
+   131→    # â”€â”€ Token Guard Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   132→
+   133→    def _parse_input_tokens(self, headers, payload) -> int:
+   134→        """Extract input token count. Header > payload > fallback(0)."""
+   135→        hval = headers.get("x-nexus-input-tokens") or headers.get("x-nexus-tokens")
+   136→        if hval:
+   137→            try:
+   138→                return int(hval)
+   139→            except (TypeError, ValueError):
+   140→                pass
+   141→        if isinstance(payload, dict) and "tokens" in payload:
+   142→            try:
+   143→                return int(payload["tokens"])
+   144→            except (TypeError, ValueError):
+   145→                pass
+   146→        return 0
+   147→
+   148→    def _track_tokens(self, agent_id, project_id, operation, input_tokens, output_tokens):
+   149→        """Track tokens via TokenGuard. Non-blocking â€” never breaks requests."""
+   150→        if input_tokens <= 0 and output_tokens <= 0:
+   151→            return None
+   152→        try:
+   153→            if input_tokens > 0:
+   154→                self.token_guard.track(agent_id, input_tokens,
+   155→                                   operation=operation,
+   156→                                   context={"project_id": project_id})
+   157→            if output_tokens > 0:
+   158→                self.token_guard.track(agent_id, output_tokens,
+   159→                                       operation=f"{operation}_output",
+   160→                                       context={"project_id": project_id})
+   161→            return {
+   162→                "input": input_tokens,
+   163→                "output": output_tokens,
+   164→                "total": input_tokens + output_tokens,
+   165→                "budget_remaining": self.token_guard.remaining(agent_id),
+   166→            }
+   167→        except Exception:
+   168→            # Non-blocking â€” log but never fail a request
+   169→            import logging
+   170→            logging.getLogger(__name__).warning("TokenGuard tracking failed")
+   171→            return {"input": input_tokens, "output": output_tokens, "total": input_tokens + output_tokens}
+   172→
+   173→
+   174→    # â”€â”€ Authentication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   175→
+   176→    def _authenticate(self, request: BridgeRequest):
+   177→        """Validate HMAC-SHA256 signature. Raises AuthError on failure."""
+   178→        from nexus_os.bridge.secrets import verify_signature, SecretNotFoundError
+   179→
+   180→        if not request.signature:
+   181→            raise AuthError("Missing X-Nexus-Signature header")
+   182→
+   183→        if not request.trace_id:
+   184→            raise AuthError("Missing X-Nexus-Trace-ID header")
+   185→
+   186→        try:
+   187→            secret = self.secret_store.get_secret(request.agent_id)
+   188→        except SecretNotFoundError:
+   189→            raise AuthError(f"Unknown agent: {request.agent_id}")
+   190→
+   191→        if not verify_signature(secret, request.trace_id, request.raw_payload, request.signature):
+   192→            raise AuthError("Invalid signature")
+   193→
+   194→    # â”€â”€ Authorization â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   195→
+   196→    def _authorize(self, request: BridgeRequest):
+   197→        """Run KAIJU 4-variable authorization. Raises ForbiddenError or HeldError."""
+   198→        if self.governor is None:
+   199→            return  # No governor â€” skip authz (dev mode)
+   200→
+   201→        from nexus_os.governor.kaiju_auth import Decision
+   202→
+   203→        kaiju = request.kaiju
+   204→        result = self.governor.check_access(
+   205→            agent_id=request.agent_id,
+   206→            project_id=request.project_id,
+   207→            action=self._kaiju_action(request.method),
+   208→            scope=kaiju.get("scope", "project"),
+   209→            intent=kaiju.get("intent", ""),
+   210→            impact=kaiju.get("impact", "low"),
+   211→            clearance=kaiju.get("clearance", "contributor"),
+   212→            trace_id=request.trace_id,
+   213→            context={
+   214→                "signature_verified": True,
+   215→                "has_secret": True,
+   216→                "is_registered": True,
+   217→            },
+   218→        )
+   219→
+   220→        if result.decision == Decision.DENY:
+   221→            raise ForbiddenError(result.reason)
+   222→        elif result.decision == Decision.HOLD:
+   223→            raise HeldError(result.reason, request.trace_id)
+   224→
+   225→    def _kaiju_action(self, method: str) -> str:
+   226→        """Map Bridge method to KAIJU action type."""
+   227→        action_map = {
+   228→            "tasks/submit": "execute",
+   229→            "tasks/status": "read",
+   230→            "vault/read": "read",
+   231→            "vault/write": "write",
+   232→        }
+   233→        return action_map.get(method, "read")
+   234→
+   235→    # â”€â”€ Request Parsing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   236→
+   237→    def parse_request(
+   238→        self,
+   239→        body: bytes,
+   240→        headers: Dict[str, str],
+   241→    ) -> BridgeRequest:
+   242→        """Parse and validate raw HTTP request into BridgeRequest."""
+   243→        # Parse JSON body
+   244→        try:
+   245→            raw = body.decode("utf-8")
+   246→            payload = json.loads(raw)
+   247→        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+   248→            raise ParseError(f"Malformed JSON body: {e}")
+   249→
+   250→        if not isinstance(payload, dict):
+   251→            raise ParseError("Request body must be a JSON object")
+   252→
+   253→        # Extract required headers
+   254→        agent_id = headers.get("x-nexus-agent-id", "")
+   255→        project_id = headers.get("x-nexus-project-id", "")
+   256→        trace_id = headers.get("x-nexus-trace-id", "")
+   257→        signature = headers.get("x-nexus-signature", "")
+   258→        lineage_id = headers.get("x-nexus-lineage-id")
+   259→
+   260→        # Determine method from the path
+   261→        # (The caller passes method via the path; for the single "/" endpoint,
+   262→        #  we use the "method" field in the JSON body if present, default to tasks/submit)
+   263→        method = payload.pop("method", "tasks/submit") if isinstance(payload, dict) else "tasks/submit"
+   264→
+   265→        kaiju = payload.pop("kaiju", {}) if isinstance(payload, dict) else {}
+   266→
+   267→        return BridgeRequest(
+   268→            agent_id=agent_id,
+   269→            project_id=project_id,
+   270→            trace_id=trace_id,
+   271→            signature=signature,
+   272→            lineage_id=lineage_id,
+   273→            payload=payload,
+   274→            raw_payload=raw,
+   275→            method=method,
+   276→            kaiju=kaiju if isinstance(kaiju, dict) else {},
+   277→        )
+   278→
+   279→    # â”€â”€ Handler Dispatch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   280→
+   281→    
+   282→    def get_agent_card(self, agent_id: str) -> Dict[str, Any]:
+   283→        """A2A v1.1: Expose agent capabilities for inter-agent negotiation."""
+   284→        # In production: pull from TrustScorer/AgentCard registry
+   285→        return {
+   286→            "agent_id": agent_id,
+   287→            "protocol": "A2A-v1.1",
+   288→            "capabilities": ["code_generation", "governance_audit", "swarm_orchestration"],
+   289→            "trust_band": "COMMUNITY_VERIFIED",
+   290→            "status": "active"
+   291→        }
+   292→        
+   293→    def get_agent_card(self, agent_id: str) -> Dict[str, Any]:
+   294→        """A2A v1.1 Endpoint: Expose capabilities and trust score to external swarms."""
+   295→        # In production, this queries the Vault/Governor for dynamic, verified capabilities.
+   296→        return {
+   297→            "agent_id": agent_id,
+   298→            "protocol": "A2A-v1.1",
+   299→            "capabilities": [
+   300→                "code_generation", 
+   301→                "governance_audit", 
+   302→                "swarm_orchestration"
+   303→            ],
+   304→            "negotiation_policies": {
+   305→                "fallback_behavior": "adaptive",
+   306→                "timeout_ms": 30000
+   307→            },
+   308→            "status": "active"
+   309→        }
+   310→    
+   311→    def handle_request(
+   312→        self,
+   313→        method: str,
+   314→        body: bytes,
+   315→        headers: Dict[str, str],
+   316→    ) -> tuple:
+   317→        """
+   318→        Handle a single Bridge request.
+   319→
+   320→        Args:
+   321→            method: HTTP method (must be POST)
+   322→            body: Raw request body bytes
+   323→            headers: Dict of HTTP headers (case-insensitive keys)
+   324→
+   325→        Returns:
+   326→            (status_code: int, response_dict: dict)
+   327→        """
+   328→        start = time.perf_counter()
+   329→
+   330→        try:
+   331→            # Only POST allowed
+   332→            if method.upper() != "POST":
+   333→                return 405, jsonrpc_error(
+   334→                    -32600, "Method not allowed. Use POST.",
+   335→                    data="Only POST is supported"
+   336→                )
+   337→
+   338→            # Parse request â€” method read from JSON payload['method']
+   339→            req = self.parse_request(body, headers)
+   340→
+   341→            # Budget pre-check (P0: TokenGuard gate)
+   342→            if not self.token_guard.check(req.agent_id, 1000):
+   343→                return 429, jsonrpc_error(
+   344→                    429, "Token budget exceeded",
+   345→                    trace_id=req.trace_id,
+   346→                    data={"remaining": self.token_guard.remaining(req.agent_id)},
+   347→                )
+   348→
+   349→            # Track tokens (before dispatch if input_tokens known)
+   350→            input_tokens = self._parse_input_tokens(headers, req.payload)
+   351→
+   352→            # Authenticate
+   353→            self._authenticate(req)
+   354→
+   355→            # Authorize
+   356→            self._authorize(req)
+   357→
+   358→            # Dispatch
+   359→            result = self._dispatch(req)
+   360→
+   361→            duration = (time.perf_counter() - start) * 1000
+   362→            if isinstance(result, dict) and "duration_ms" not in result:
+   363→                result["duration_ms"] = round(duration, 2)
+   364→
+   365→
+   366→            # Track token usage
+   367→            response_json = json.dumps(result) if isinstance(result, dict) else "{}"
+   368→            output_tokens = len(response_json) * 4 // 10  # rough: chars to ~token estimate
+   369→            token_info = self._track_tokens(req.agent_id, req.project_id,
+   370→                                            req.method, input_tokens, output_tokens)
+   371→            if token_info:
+   372→                result["token_usage"] = token_info
+   373→
+   374→            return 200, jsonrpc_result(result, req.trace_id)
+   375→
+   376→        except HeldError as e:
+   377→            return e.http_status, jsonrpc_result(
+   378→                {
+   379→                    "task_id": None,
+   380→                    "status": "held",
+   381→                    "hold_reason": e.message,
+   382→                    "hold_ticket": e.hold_ticket,
+   383→                },
+   384→                e.hold_ticket,
+   385→            )
+   386→        except AuthError as e:
+   387→            return e.http_status, jsonrpc_error(e.code, e.message)
+   388→        except ForbiddenError as e:
+   389→            return e.http_status, jsonrpc_error(e.code, e.message)
+   390→        except ParseError as e:
+   391→            return e.http_status, jsonrpc_error(e.code, e.message)
+   392→        except Exception as e:
+   393→            logger.exception("Bridge internal error")
+   394→            return 500, jsonrpc_error(
+   395→                -32603, f"Internal error: {e}"
+   396→            )
+   397→
+   398→    def handle_submit(self, body: bytes, headers: Dict[str, str]) -> tuple:
+   399→        """Handle POST /tasks/submit."""
+   400→        start = time.perf_counter()
+   401→        try:
+   402→            req = self.parse_request(body, headers)
+   403→            req.method = "tasks/submit"
+   404→
+   405→            # Budget pre-check (P0: TokenGuard gate)
+   406→            if not self.token_guard.check(req.agent_id, 1000):
+   407→                return 429, jsonrpc_error(
+   408→                    429, "Token budget exceeded",
+   409→                    trace_id=req.trace_id,
+   410→                    data={"remaining": self.token_guard.remaining(req.agent_id)},
+   411→                )
+   412→
+   413→            self._authenticate(req)
+   414→            self._authorize(req)
+   415→
+   416→            task_id = f"task-{uuid.uuid4().hex[:12]}"
+   417→            description = req.payload.get("description", "")
+   418→            context = req.payload.get("context", {})
+   419→            context["agent_id"] = req.agent_id
+   420→
+   421→            exec_result = self.executor.execute(task_id, description, context)
+   422→
+   423→            self._task_results[task_id] = {
+   424→                "task_id": task_id,
+   425→                "status": "completed" if exec_result.success else "failed",
+   426→                "output": exec_result.output,
+   427→                "error": exec_result.error,
+   428→            }
+   429→
+   430→            duration = (time.perf_counter() - start) * 1000
+   431→            return 200, jsonrpc_result({
+   432→                "task_id": task_id,
+   433→                "status": "completed" if exec_result.success else "failed",
+   434→                "output": exec_result.output,
+   435→                "error": exec_result.error,
+   436→                "duration_ms": round(duration, 2),
+   437→            }, req.trace_id)
+   438→
+   439→        except HeldError as e:
+   440→            return e.http_status, jsonrpc_result(
+   441→                {"task_id": None, "status": "held", "hold_reason": e.message, "hold_ticket": e.hold_ticket},
+   442→                e.hold_ticket,
+   443→            )
+   444→        except AuthError as e:
+   445→            return e.http_status, jsonrpc_error(e.code, e.message)
+   446→        except ForbiddenError as e:
+   447→            return e.http_status, jsonrpc_error(e.code, e.message)
+   448→        except ParseError as e:
+   449→            return e.http_status, jsonrpc_error(e.code, e.message)
+   450→        except Exception as e:
+   451→            logger.exception("Bridge submit error")
+   452→            return 500, jsonrpc_error(-32603, f"Internal error: {e}")
+   453→
+   454→    def handle_status(self, body: bytes, headers: Dict[str, str]) -> tuple:
+   455→        """Handle POST /tasks/status."""
+   456→        try:
+   457→            req = self.parse_request(body, headers)
+   458→            req.method = "tasks/status"
+   459→            self._authenticate(req)
+   460→            self._authorize(req)
+   461→
+   462→            task_id = req.payload.get("task_id", "")
+   463→            result = self._task_results.get(task_id)
+   464→
+   465→            if result is None:
+   466→                return 404, jsonrpc_error(-32602, f"Task not found: {task_id}")
+   467→
+   468→            return 200, jsonrpc_result(result, req.trace_id)
+   469→        except (AuthError, ForbiddenError, ParseError, HeldError) as e:
+   470→            return e.http_status, jsonrpc_error(e.code, e.message, data=e.hold_ticket if isinstance(e, HeldError) else None)
+   471→        except Exception as e:
+   472→            return 500, jsonrpc_error(-32603, f"Internal error: {e}")
+   473→
+   474→    def handle_vault_read(self, body: bytes, headers: Dict[str, str]) -> tuple:
+   475→        """Handle POST /vault/read."""
+   476→        try:
+   477→            req = self.parse_request(body, headers)
+   478→            req.method = "vault/read"
+   479→            self._authenticate(req)
+   480→            self._authorize(req)
+   481→            return 200, jsonrpc_result(
+   482→                {"records": [], "query": req.payload.get("query", ""), "count": 0},
+   483→                req.trace_id,
+   484→            )
+   485→        except (AuthError, ForbiddenError, ParseError, HeldError) as e:
+   486→            return e.http_status, jsonrpc_error(e.code, e.message)
+   487→        except Exception as e:
+   488→            return 500, jsonrpc_error(-32603, f"Internal error: {e}")
+   489→
+   490→    def handle_vault_write(self, body: bytes, headers: Dict[str, str]) -> tuple:
+   491→        """Handle POST /vault/write."""
+   492→        try:
+   493→            req = self.parse_request(body, headers)
+   494→            req.method = "vault/write"
+   495→            self._authenticate(req)
+   496→            self._authorize(req)
+   497→            return 200, jsonrpc_result(
+   498→                {"record_id": f"rec-{uuid.uuid4().hex[:8]}", "status": "written"},
+   499→                req.trace_id,
+   500→            )
+   501→        except (AuthError, ForbiddenError, ParseError, HeldError) as e:
+   502→            return e.http_status, jsonrpc_error(e.code, e.message)
+   503→        except Exception as e:
+   504→            return 500, jsonrpc_error(-32603, f"Internal error: {e}")
+   505→
+   506→    def _dispatch(self, req: BridgeRequest) -> Dict[str, Any]:
+   507→        """Dispatch parsed request to appropriate handler."""
+   508→        handlers = {
+   509→            "tasks/submit": self._exec_submit,
+   510→            "tasks/status": self._exec_status,
+   511→            "vault/read": self._exec_vault_read,
+   512→            "vault/write": self._exec_vault_write,
+   513→            "a2a/agent-card": self._exec_agent_card,  # A2A v1.1
+   514→        }
+   515→        handler = handlers.get(req.method)
+   516→        if handler is None:
+   517→            raise ParseError(f"Unknown method: {req.method}")
+   518→        return handler(req)
+   519→
+   520→    def _exec_agent_card(self, req: BridgeRequest) -> Dict[str, Any]:
+   521→        """A2A v1.1: Return agent capabilities for inter-agent negotiation."""
+   522→        from nexus_os.governor.trust_scoring import AgentCard
+   523→        # Create a default card with common capabilities
+   524→        card = AgentCard(agent_id=req.agent_id or "default")
+   525→        card.capabilities = [
+   526→            "code_generation",
+   527→            "swarm_orchestration",
+   528→            "governance_audit",
+   529→            "memory_query",
+   530→            "skill_discovery",
+   531→        ]
+   532→        return card.get_agent_card()
+   533→
+   534→    def _exec_submit(self, req: BridgeRequest) -> Dict[str, Any]:
+   535→        task_id = f"task-{uuid.uuid4().hex[:12]}"
+   536→        description = req.payload.get("description", "")
+   537→        context = req.payload.get("context", {})
+   538→        context["agent_id"] = req.agent_id
+   539→
+   540→        exec_result = self.executor.execute(task_id, description, context)
+   541→
+   542→        self._task_results[task_id] = {
+   543→            "task_id": task_id,
+   544→            "status": "completed" if exec_result.success else "failed",
+   545→            "output": exec_result.output,
+   546→            "error": exec_result.error,
+   547→        }
+   548→
+   549→        return {
+   550→            "task_id": task_id,
+   551→            "status": "completed" if exec_result.success else "failed",
+   552→            "output": exec_result.output,
+   553→            "error": exec_result.error,
+   554→        }
+   555→
+   556→    def _exec_status(self, req: BridgeRequest) -> Dict[str, Any]:
+   557→        task_id = req.payload.get("task_id", "")
+   558→        result = self._task_results.get(task_id)
+   559→        if result is None:
+   560→            raise ParseError(f"Task not found: {task_id}")
+   561→        return result
+   562→
+   563→    def _exec_vault_read(self, req: BridgeRequest) -> Dict[str, Any]:
+   564→        return {"records": [], "query": req.payload.get("query", ""), "count": 0}
+   565→
+   566→    def _exec_vault_write(self, req: BridgeRequest) -> Dict[str, Any]:
+   567→        return {"record_id": f"rec-{uuid.uuid4().hex[:8]}", "status": "written"}
+   568→
+   569→
+   570→# â”€â”€ FastAPI Integration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   571→
+   572→def create_app(bridge: Optional[BridgeServer] = None) -> "FastAPI":
+   573→    """
+   574→    Create a FastAPI application wrapping the BridgeServer.
+   575→
+   576→    Usage:
+   577→        from nexus_os.bridge.server import create_app
+   578→        app = create_app()
+   579→        # uvicorn.run(app, host="0.0.0.0", port=8000)
+   580→    """
+   581→    try:
+   582→        from fastapi import FastAPI, Request, Response
+   583→        from fastapi.responses import JSONResponse
+   584→    except ImportError:
+   585→        raise ImportError(
+   586→            "FastAPI is required for the Bridge server. "
+   587→            "Install it with: pip install fastapi uvicorn"
+   588→        )
+   589→
+   590→    app = FastAPI(title="Nexus OS A2A Bridge", version="1.0.0")
+   591→    server = bridge or BridgeServer()
+   592→
+   593→    @app.post("/tasks/submit")
+   594→    async def submit_task(request: Request):
+   595→        body = await request.body()
+   596→        req_headers = {k.lower(): v for k, v in request.headers.items()}
+   597→        agent_id = req_headers.get("x-nexus-agent-id", "unknown")
+   598→        input_tokens = len(body) // 4  # Rough estimate
+   599→        status_code, response = server.handle_submit(body, req_headers)
+   600→        output_tokens = len(str(response).encode()) // 4  # Rough estimate
+   601→        server.token_guard.track(agent_id, input_tokens + output_tokens,
+   602→                                  operation="task_delegation",
+   603→                                  input_tokens=input_tokens,
+   604→                                  output_tokens=output_tokens)
+   605→        return JSONResponse(content=response, status_code=status_code,
+   606→                           headers={"X-Nexus-Input-Tokens": str(input_tokens),
+   607→                                   "X-Nexus-Output-Tokens": str(output_tokens),
+   608→                                   "X-Token-Remaining": str(server.token_guard.remaining(agent_id))})
+   609→
+   610→    @app.post("/tasks/status")
+   611→    async def query_status(request: Request):
+   612→        body = await request.body()
+   613→        req_headers = {k.lower(): v for k, v in request.headers.items()}
+   614→        agent_id = req_headers.get("x-nexus-agent-id", "unknown")
+   615→        input_tokens = len(body) // 4
+   616→        status_code, response = server.handle_status(body, req_headers)
+   617→        output_tokens = len(str(response).encode()) // 4
+   618→        server.token_guard.track(agent_id, input_tokens + output_tokens,
+   619→                                  operation="memory_query",
+   620→                                  input_tokens=input_tokens,
+   621→                                  output_tokens=output_tokens)
+   622→        return JSONResponse(content=response, status_code=status_code,
+   623→                           headers={"X-Nexus-Input-Tokens": str(input_tokens),
+   624→                                   "X-Nexus-Output-Tokens": str(output_tokens),
+   625→                                   "X-Token-Remaining": str(server.token_guard.remaining(agent_id))})
+   626→
+   627→    @app.post("/vault/read")
+   628→    async def vault_read(request: Request):
+   629→        body = await request.body()
+   630→        req_headers = {k.lower(): v for k, v in request.headers.items()}
+   631→        agent_id = req_headers.get("x-nexus-agent-id", "unknown")
+   632→        input_tokens = len(body) // 4
+   633→        status_code, response = server.handle_vault_read(body, req_headers)
+   634→        output_tokens = len(str(response).encode()) // 4
+   635→        server.token_guard.track(agent_id, input_tokens + output_tokens,
+   636→                                  operation="memory_query",
+   637→                                  input_tokens=input_tokens,
+   638→                                  output_tokens=output_tokens)
+   639→        return JSONResponse(content=response, status_code=status_code,
+   640→                           headers={"X-Nexus-Input-Tokens": str(input_tokens),
+   641→                                   "X-Nexus-Output-Tokens": str(output_tokens),
+   642→                                   "X-Token-Remaining": str(server.token_guard.remaining(agent_id))})
+   643→
+   644→    @app.post("/vault/write")
+   645→    async def vault_write(request: Request):
+   646→        body = await request.body()
+   647→        req_headers = {k.lower(): v for k, v in request.headers.items()}
+   648→        agent_id = req_headers.get("x-nexus-agent-id", "unknown")
+   649→        input_tokens = len(body) // 4
+   650→        status_code, response = server.handle_vault_write(body, req_headers)
+   651→        output_tokens = len(str(response).encode()) // 4
+   652→        server.token_guard.track(agent_id, input_tokens + output_tokens,
+   653→                                  operation="memory_query",
+   654→                                  input_tokens=input_tokens,
+   655→                                  output_tokens=output_tokens)
+   656→        return JSONResponse(content=response, status_code=status_code,
+   657→                           headers={"X-Nexus-Input-Tokens": str(input_tokens),
+   658→                                   "X-Nexus-Output-Tokens": str(output_tokens),
+   659→                                   "X-Token-Remaining": str(server.token_guard.remaining(agent_id))})
+   660→
+   661→    @app.post("/")
+   662→    async def jsonrpc_router(request: Request):
+   663→        body = await request.body()
+   664→        req_headers = {k.lower(): v for k, v in request.headers.items()}
+   665→        agent_id = req_headers.get("x-nexus-agent-id", "unknown")
+   666→        input_tokens = len(body) // 4
+   667→        status_code, response = server.handle_request("POST", body, req_headers)
+   668→        # handle_request() already tracks tokens via _track_tokens()
+   669→        output_tokens = len(str(response).encode()) // 4
+   670→        return JSONResponse(content=response, status_code=status_code,
+   671→                           headers={"X-Nexus-Input-Tokens": str(input_tokens),
+   672→                                   "X-Nexus-Output-Tokens": str(output_tokens),
+   673→                                   "X-Token-Remaining": str(server.token_guard.remaining(agent_id))})
+   674→
+   675→    @app.get("/health")
+   676→    async def health():
+   677→        return {"status": "ok", "service": "nexus-bridge", "version": "1.0.0"}
+   678→
+   679→    return app
+   680→
+   681→

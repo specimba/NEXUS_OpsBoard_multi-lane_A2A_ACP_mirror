@@ -1,0 +1,787 @@
+     1→     1→# NEXUS OS v3.0 — Command Center: Strategic Status Report
+     2→     2→
+     3→     3→**Prepared for:** speci (SPECI — System Architect)
+     4→     4→**Date:** 2025-07-03
+     5→     5→**Version:** Dashboard v3.0 + Python Backend v3.1
+     6→     6→**Log Reference:** LOG-002, Worklog Sessions 1-7
+     7→     7→
+     8→     8→---
+     9→     9→
+    10→    10→## TABLE OF CONTENTS
+    11→    11→
+    12→    12→1. [Executive Summary](#1-executive-summary)
+    13→    13→2. [Backend Coder Team Structure](#2-backend-coder-team-structure)
+    14→    14→3. [Dashboard Sections — How Each Works](#3-dashboard-sections--how-each-works)
+    15→    15→4. [Successful Simulations & Trials](#4-successful-simulations--trials)
+    16→    16→5. [Major Problems Faced & Resolutions](#5-major-problems-faced--resolutions)
+    17→    17→6. [Creation & Testing Procedure](#6-creation--testing-procedure)
+    18→    18→7. [File Inventory & Architecture](#7-file-inventory--architecture)
+    19→    19→8. [Current Status & Phase 0 Readiness](#8-current-status--phase-0-readiness)
+    20→    20→9. [Appendix: Key Files Reference](#9-appendix-key-files-reference)
+    21→    21→
+    22→    22→---
+    23→    23→
+    24→    24→## 1. Executive Summary
+    25→    25→
+    26→    26→NEXUS OS Command Center is an 8-pillar AI governance dashboard built with Next.js 16 + Turbopack on the frontend and a Python governance backend (`nexus_os/`) with 67 modules and 586+ pytest tests. The dashboard features real-time WebSocket updates, AI-powered assistant chat, transparent model routing (AI Provider Bridge), and interactive trust governance controls.
+    27→    27→
+    28→    28→**Key Metrics:**
+    29→    29→- **Frontend:** 107 TypeScript files, 16,814 lines across 26 custom components
+    30→    30→- **Backend (Python):** 67 modules across 9 packages, 586 tests (2 collection errors)
+    31→    31→- **API Routes:** 19 endpoints (10 GET + 7 POST + 2 PUT)
+    32→    32→- **Database:** SQLite via Prisma ORM with 12 models
+    33→    33→- **Real-time:** WebSocket mini-service on port 3003 (Socket.io)
+    34→    34→- **Lint Status:** 0 errors, 0 warnings
+    35→    35→- **Design:** 8 interconnected tab modules, dark/light theme, responsive mobile
+    36→    36→
+    37→    37→---
+    38→    38→
+    39→    39→## 2. Backend Coder Team Structure
+    40→    40→
+    41→    41→### 2.1 Team Ownership Matrix (v3.2 Aligned)
+    42→    42→
+    43→    43→| Team | Agent | Responsibility | Primary Files |
+    44→    44→|------|-------|---------------|---------------|
+    45→    45→| **SPECI** | speci (human) | Architecture decisions, branch protection, Phase 0 gate | All canonical paths |
+    46→    46→| **CODEX** | CODEX | Port standardization, pre-commit hooks, benchmarks | `nexus_os/bridge/`, `nexus_os/db/`, `scripts/` |
+    47→    47→| **NEO** | NEO | OPUSman v6.2 integration, Vault/5-track wiring | `nexus_os/governor/`, `nexus_os/vault/` |
+    48→    48→| **GLM5.1** | GLM | Dashboard wiring to real NEXUS API data | `src/components/nexus/tabs/`, `src/app/api/` |
+    49→    49→| **OSMAN** | Qwen3.6 | Architectural audit, Phase 0 blockers | Review only |
+    50→    50→| **GROK420** | Grok 4.3 | Task verification, false-completion detection | `tasks/pending/`, `tasks/done/` |
+    51→    51→| **OPENcode** | OPENcode | OpenClaw spawner, swarm management | `nexus_os/swarm/openclaw_spawner.py` |
+    52→    52→
+    53→    53→### 2.2 Frontend Build Team (This Environment)
+    54→    54→
+    55→    55→| Role | Scope | Tools |
+    56→    56→|------|-------|-------|
+    57→    57→| Main Agent | Architecture, API routes, database schema, bug fixes, feature integration | Next.js 16, Prisma, TypeScript |
+    58→    58→| Subagent: AI Provider Bridge | Transparent model routing engine | z-ai-web-dev-sdk, OpenRouter API |
+    59→    59→| Subagent: API Builder | REST API endpoints with validation | Next.js Route Handlers |
+    60→    60→| Subagent: Overview Enhancer | Dashboard overview tab features | React, Recharts, Framer Motion |
+    61→    61→| Subagent: WebSocket Builder | Real-time swarm updates | Socket.io (port 3003) |
+    62→    62→| Subagent: Styling Expert | CSS animations, responsive design | Tailwind CSS 4, shadcn/ui |
+    63→    63→
+    64→    64→### 2.3 Python Backend Architecture
+    65→    65→
+    66→    66→```
+    67→    67→nexus_os/                     # 67 Python modules
+    68→    68→├── bridge/                   # JSON-RPC server, SDK, secrets, MCP auth, Vault bridge
+    69→    69→│   ├── server.py            # JSON-RPC governance server
+    70→    70→│   ├── sdk.py               # Agent SDK client
+    71→    71→│   ├── secrets.py           # Secure key management
+    72→    72→│   ├── mcpaauth.py          # MCP authentication
+    73→    73→│   └── vault.py             # Vault bridge
+    74→    74→├── db/                       # Thread-safe database manager v3
+    75→    75→│   └── manager.py           # SQLite/PostgreSQL connection pool
+    76→    76→├── engine/                   # Task execution & skill management
+    77→    77→│   ├── executor.py          # Real Task Executor v2
+    78→    78→│   ├── router.py            # Request routing
+    79→    79→│   ├── forge.py             # Declarative Team Design (Nexus Forge)
+    80→    80→│   ├── skillsmith.py        # Auto-Discovery System v2.1
+    81→    81→│   ├── skill_smith.py       # Skill Smith alternative
+    82→    82→│   ├── skill_adapter.py     # Skill Adapter Layer
+    83→    83→│   ├── tool_discipline.py   # Metis v2 Tool Discipline
+    84→    84→│   ├── hermes.py            # Message routing
+    85→    85→│   ├── hermes_experience.py # Experience tracking
+    86→    86→│   └── heartbeat.py         # Health monitoring
+    87→    87→├── governor/                 # Trust & compliance engine
+    88→    88→│   ├── base.py              # Governor base class
+    89→    89→│   ├── compliance.py        # Compliance checking
+    90→    90→│   ├── trust_engine_v2.py   # TrustEngine v2.2 (HARDWALL + CDR)
+    91→    91→│   ├── trust_scoring.py     # Canonical scoring formula
+    92→    92→│   ├── kaiju_auth.py        # Kaiju authentication
+    93→    93→│   ├── proof_chain.py       # VAP proof chain
+    94→    94→│   └── autoharness.py       # Automated test harness
+    95→    95→├── gmr/                      # Global Model Router
+    96→    96→│   ├── scheduler.py         # Model rotation scheduler
+    97→    97→│   ├── rotator.py           # Model rotation logic
+    98→    98→│   ├── circuit_breaker.py   # Circuit breaker protection
+    99→    99→│   ├── savings.py           # Cost optimization
+   100→   100→│   ├── domain_mapping.py    # Domain-to-model mapping
+   101→   101→│   ├── telemetry.py         # Model performance tracking
+   102→   102→│   ├── trust_adapter.py     # Trust-based model selection
+   103→   103→│   └── context_packet.py    # Request context packaging
+   104→   104→├── monitoring/               # Token & health monitoring
+   105→   105→│   ├── token_guard.py       # TokenGuard + quick_track
+   106→   106→│   ├── counters.py          # Token counting implementations
+   107→   107→│   ├── strategies.py        # Execution boundaries & caching
+   108→   108→│   └── trust_scorer.py      # Trust scoring integration
+   109→   109→├── observability/            # Tracing & debugging
+   110→   110→│   ├── tracing.py           # Request tracing
+   111→   111→│   └── squeez.py            # Log compression
+   112→   112→├── swarm/                    # Worker orchestration
+   113→   113→│   ├── foreman.py           # Swarm foreman/manager
+   114→   114→│   ├── worker.py            # Worker process
+   115→   115→│   ├── auction.py           # Task auction system
+   116→   116→│   └── openclaw_spawner.py  # OpenClaw agent spawner
+   117→   117→├── vault/                    # 5-track memory plane
+   118→   118→│   ├── manager.py           # Vault manager (canonical 5-track)
+   119→   119→│   ├── memory.py            # Memory operations
+   120→   120→│   ├── memory_tracks.py     # 5-track definitions
+   121→   121→│   ├── memory_adapter.py    # Memory adaptation layer
+   122→   122→│   ├── trust.py             # Trust store
+   123→   123→│   ├── trust_store.py       # Trust persistence
+   124→   124→│   ├── cache.py             # Vault cache layer
+   125→   125→│   ├── decay_worker.py      # Memory decay processor
+   126→   126→│   └── poisoning.py         # Data poisoning detection
+   127→   127→├── team/                     # Agentic coordination
+   128→   128→│   └── coordinator.py       # Team coordinator
+   129→   129→├── cron/                     # Scheduled tasks
+   130→   130→│   └── agent_cycle.py       # Agent cycle runner
+   131→   131→├── stresslab/                # Stress testing framework
+   132→   132→│   ├── isc_runner.py        # ISC benchmark runner
+   133→   133→│   └── templates/           # Test templates
+   134→   134→│       └── cyber_test/      # Cybersecurity test templates
+   135→   135→└── relay/                    # Model relay proxy
+   136→   136→    └── model_relay.py       # Central Transparent Proxy v1.15.0
+   137→   137→```
+   138→   138→
+   139→   139→### 2.4 Test Suite Structure (586 tests)
+   140→   140→
+   141→   141→```
+   142→   142→tests/                        # 44 test files, 586 collected tests
+   143→   143→├── governor/                 # 6 files — governance, trust, compliance, auth, proof
+   144→   144→├── vault/                    # 7 files — memory, trust, cache, manager, adapter, tracks
+   145→   145→├── bridge/                   # 4 files — server, SDK, MCP auth, token integration
+   146→   146→├── engine/                   # 4 files — router, skillsmith, tool discipline, Hermes GMR
+   147→   147→├── swarm/                    # 2 files — auction, spawner budget gate
+   148→   148→├── monitoring/               # 3 files — strategies, token guard, GMR
+   149→   149→├── observability/            # 2 files — tracing, Squeez
+   150→   150→├── security/                 # 2 files — encryption hard-fail, poisoning v2
+   151→   151→├── integration/              # 4 files — compliance, bridge, heartbeat, Hermes, Squeez
+   152→   152→├── contracts/                # 2 files — protocol contracts
+   153→   153→├── cron/                     # 1 file — agent cycle
+   154→   154→├── team/                     # 1 file — coordinator
+   155→   155→└── unit/                     # 2 files — executor v2, secrets
+   156→   156→```
+   157→   157→
+   158→   158→**2 Collection Errors (Non-Blocking):**
+   159→   159→- `tests/governor/test_trust_scoring.py` — import path issue
+   160→   160→- `tests/monitoring/test_token_guard.py` — import path issue
+   161→   161→
+   162→   162→---
+   163→   163→
+   164→   164→## 3. Dashboard Sections — How Each Works
+   165→   165→
+   166→   166→### 3.1 Overview Tab (`overview-tab.tsx`)
+   167→   167→
+   168→   168→**Purpose:** Command center landing page — at-a-glance system health, activity, and governance status.
+   169→   169→
+   170→   170→**Sections:**
+   171→   171→1. **Session Timeline** — Horizontal timeline showing 7 key session events (Session Started → First StressLab Test → Governor Denial → Model Rotation → Budget Alert → VAP Checkpoint → Session Report) with past/active/future states
+   172→   172→2. **Welcome Banner** — Animated gradient banner with live clock, operational badge, server/node status
+   173→   173→3. **Quick Stats Bar** — Thin horizontal bar with real-time counters: requests today, active connections, 30d uptime, last deploy
+   174→   174→4. **System Architecture Mini-Map** — Compact CSS/HTML flow diagram: Bridge↔Engine↔Governor → Vault/GMR/Swarm → Monitor/Config
+   175→   175→5. **4 Stat Cards** — Token Budget (73,450), Active Agents (3), StressLab Runs (47), Collapse Rate (23%) with AnimatedCounter
+   176→   176→6. **Performance Metrics Row** — Avg Response Time (342ms with sparkline), Error Rate (0.8%), Throughput (247 req/min)
+   177→   177→7. **8-Pillar Health Grid** — Interactive cards with sparklines, click-to-open PillarDetailDialog, pulse animation when health < 95%
+   178→   178→8. **System Architecture SVG** — Radial diagram with NEXUS Core hub, 8 pillar nodes, animated data flow dots
+   179→   179→9. **System Health Timeline** — 8-pillar stacked area chart (24h, 6h, 12h selector)
+   180→   180→10. **Live Activity Feed** — Simulated real-time feed with useRef-based tick counter (3s interval)
+   181→   181→11. **System Notifications** — Alert cards with severity indicators
+   182→   182→12. **Recent Decisions** — Mini-table with scope badges (CRIT/CROSS/SELF)
+   183→   183→13. **Quick Actions** — Run Diagnostic (real API modal), Export Report (JSON download), Clear Cache (reload)
+   184→   184→14. **Governance Stats** — Trust distribution, budget utilization gauge, weekly agent activity bar chart
+   185→   185→
+   186→   186→**Data Source:** Mix of API data (`/api/system`, `/api/agents`, `/api/tokens`) and simulated real-time updates
+   187→   187→
+   188→   188→### 3.2 StressLab Tab (`stresslab-tab.tsx`)
+   189→   189→
+   190→   190→**Purpose:** AI model stress testing framework — run benchmarks, compare models, analyze results.
+   191→   191→
+   192→   192→**Sections:**
+   193→   193→1. **4 Stat Cards** — Test Count, Collapse Count, Collapse Rate, Pass Rate (all from API data)
+   194→   194→2. **Template Browser** — ISC-Bench templates (12 in DB, target 84) with domain, difficulty, description
+   195→   195→3. **Test Results Summary** — Donut chart showing PASS/FAIL/WARNING distribution from real test runs
+   196→   196→4. **Domain Coverage** — 6 domains with progress bars showing template counts
+   197→   197→5. **Arena Comparison** — Commercial vs Heretic model cascade with animated gradient bars and Trophy winner badge
+   198→   198→6. **Compare Models Dialog** — Side-by-side comparison with select dropdowns, winner highlighting
+   199→   199→7. **Run Test Dialog** — Select model + mode (single/icl/agentic), real API execution via POST `/api/stresslab`
+   200→   200→8. **Batch Run Dialog** — Run multiple templates sequentially via API
+   201→   201→9. **Run History Card** — Last 5 runs with result badges and duration
+   202→   202→
+   203→   203→**Data Source:** `/api/stresslab` with 15s auto-refresh. Test creation calls `POST /api/stresslab` with `{ action: "run_test" }`
+   204→   204→
+   205→   205→### 3.3 GMR Router Tab (`gmr-tab.tsx`)
+   206→   206→
+   207→   207→**Purpose:** Global Model Router — manage AI model pools, monitor health, route requests transparently.
+   208→   208→
+   209→   209→**Sections:**
+   210→   210→1. **AI Provider Bridge** — NEW: Transparent model routing visualization
+   211→   211→   - Provider Status Cards (z-ai SDK, NVIDIA NIM, OpenRouter) with health dots
+   212→   212→   - Model Tier Router (4 expandable tiers: Reasoning/Balanced/Fast/Free) with honest model names
+   213→   213→   - Request Optimization Stats (4 categories with saved counts)
+   214→   214→   - Send Test Request Dialog (tier selection, message input, live response)
+   215→   215→2. **4 Stat Cards** — Models Online, Avg Health, FREE_RESEARCH Pool, Active Rotations
+   216→   216→3. **Latency Chart** — NexusBarChart showing qwen/trinity/gemma latency over time
+   217→   217→4. **Model Performance Comparison** — Grouped bar chart (Health, Success Rate, Latency Score) from real data
+   218→   218→5. **Pool Health Overview** — Stacked horizontal bars per pool with per-model health segments
+   219→   219→6. **Rotation Analytics** — Most Rotated To/From with numbered rankings
+   220→   220→7. **Failover Log** — 5 recent failover events with severity badges
+   221→   221→8. **Model Registry** — Interactive cards with Switch toggles (API-wired with optimistic updates), sparklines, pool guard
+   222→   222→9. **Pool Status** — PREMIUM/MID/FAST/FREE_RESEARCH pools with per-model stats and mini sparklines
+   223→   223→10. **Rotation Log** — Refreshable log with timestamps
+   224→   224→11. **Test Console** — Select model, test type (Simple/Reasoning/Code/JSON/Domain), Run Test via `/api/chat`
+   225→   225→
+   226→   226→**Data Source:** `/api/models` with 15s auto-refresh. Toggle calls `POST /api/models` with rollback on failure.
+   227→   227→
+   228→   228→### 3.4 Governor Tab (`governor-tab.tsx`)
+   229→   229→
+   230→   230→**Purpose:** Trust governance engine — manage agent trust, enforce constitution, visualize decision pipeline.
+   231→   231→
+   232→   232→**Sections:**
+   233→   233→1. **Constitution Status Banner** — Active rules count, last amendment, "Constitution Active" badge
+   234→   234→2. **4 Stat Cards** — ALLOW/DENY/HOLD decisions, Avg Trust Score (all from API data)
+   235→   235→3. **Decision Distribution** — PieChart showing ALLOW/DENY/HOLD split
+   236→   236→4. **Impact Distribution** — PieChart showing LOW/MEDIUM/HIGH/CRITICAL
+   237→   237→5. **Scope Distribution** — BarChart by scope type
+   238→   238→6. **Agent Trust Scores** — Per-agent Progress bars with threshold line markers, "below threshold" warnings
+   239→   239→7. **Lane Trust Thresholds** — Interactive slider adjustment (4 lanes: research/review/audit/impl) with API persistence
+   240→   240→8. **Decision Timeline** — Visual timeline of governance decisions
+   241→   241→9. **Agent Risk Matrix** — Scatter chart (trust vs activity) per agent
+   242→   242→10. **Constitution Rules Summary** — Active rules with severity badges
+   243→   243→11. **Danger Gate Flowchart** — Pattern visualization
+   244→   244→12. **Live Decision Feed** — Cycling through real API decisions with auto-scroll
+   245→   245→13. **CDR Stage Machine** — 6-stage CDR pipeline visualization (from TrustEngine v2.2)
+   246→   246→14. **TrustEngine Panel** — Health summary, trust velocity, HARDWALL configuration, logistic scaling curve
+   247→   247→15. **Decision Detail Dialog** — Full decision details with Appeal button (API-wired)
+   248→   248→16. **Add Pattern Dialog** — Add new danger patterns via API
+   249→   249→
+   250→   250→**Data Source:** `/api/governor` with 15s auto-refresh + `/api/trust-engine`. All mutations API-wired.
+   251→   251→
+   252→   252→### 3.5 Vault Tab (`vault-tab.tsx`)
+   253→   253→
+   254→   254→**Purpose:** 5-track memory plane — browse, search, verify immutable audit trail.
+   255→   255→
+   256→   256→**Sections:**
+   257→   257→1. **Vault Integrity Banner** — "All 5 tracks operational" with verification timestamp
+   258→   258→2. **4 Stat Cards** — Total Entries, Active Tracks, Latest Entry, Avg Score (from API data)
+   259→   259→3. **Entry Distribution Donut** — PieChart showing 5-track distribution
+   260→   260→4. **Recent Activity Timeline** — 8-item vertical timeline with color-coded dots
+   261→   261→5. **Track Overview Cards** — 5 clickable cards (EVENT/TRUST/CAP/FAIL/GOV) with gradient backgrounds
+   262→   262→6. **Search + Filter** — Text search + track filter with result count, clear button
+   263→   263→7. **Entry Browser Table** — Filterable rows with track badges, click-to-open detail dialog
+   264→   264→8. **Entry Detail Dialog** — Full metadata, formatted JSON value, score progress bar, copy buttons, "View in VAP Chain"
+   265→   265→9. **VAP Proof Chain** — Timeline-style vertical layout with numbered nodes, color-coded borders, hash copy, "Verify Chain Integrity" (API-wired with results display)
+   266→   266→10. **Export Vault Data** — CSV download button
+   267→   267→
+   268→   268→**Data Source:** `/api/vault` with 15s auto-refresh. Verify calls `POST /api/vault` with `{ action: "verify_chain" }`.
+   269→   269→
+   270→   270→### 3.6 Research Tab (`research-tab.tsx`)
+   271→   271→
+   272→   272→**Purpose:** Research paper queue management — P0/P1/P2 priorities, daily practice template.
+   273→   273→
+   274→   274→**Sections:**
+   275→   275→1. **3 Stat Cards** — P0 Critical, P1 High, P2 Medium paper counts (from API data)
+   276→   276→2. **Search Bar** — Cross-tier search matching title, ID, task
+   277→   277→3. **P0 Critical Queue** — Red-accented cards with priority badge, status badge
+   278→   278→4. **P1 High Queue** — Orange-accented cards
+   279→   279→5. **P2 Medium Queue** — Emerald-accented cards
+   280→   280→6. **Paper Detail Dialog** — Full paper details, relevance score bar, copy deliverable, arXiv link detection, "Mark as In Progress" (API-wired), priority change dropdown
+   281→   281→7. **Add to Queue Dialog** — Add paper with arXiv ID, domain selection
+   282→   282→8. **Research Progress Card** — 4 status categories with progress bars
+   283→   283→9. **Daily Practice Template** — Step-by-step practice session with timer (32min countdown)
+   284→   284→10. **Start Practice Session** — Local state tracking, step progression
+   285→   285→
+   286→   286→**Data Source:** `/api/research` with 30s auto-refresh. Mutations: PUT for mark-in-progress and priority changes.
+   287→   287→
+   288→   288→### 3.7 Swarm Tab (`swarm-tab.tsx`)
+   289→   289→
+   290→   290→**Purpose:** Worker orchestration — manage agent workers, assign tasks, monitor real-time status.
+   291→   291→
+   292→   292→**Sections:**
+   293→   293→1. **Swarm Health Banner** — CPU icon with pulse ring, LIVE/Offline WebSocket indicator
+   294→   294→2. **5 Stat Cards** — Total Workers, Busy, Idle, Error, Avg Trust (from API data)
+   295→   295→3. **Swarm Load Progress Bar** — Capacity utilization with shimmer overlay
+   296→   296→4. **Swarm Metrics** — 4 mini cards: Tasks/hour, Avg Duration, Success Rate, Worker Utilization
+   297→   297→5. **Swarm Topology Map** — CSS/SVG diagram: Foreman → Workers with color-coded status lines
+   298→   298→6. **Worker Performance Comparison** — BarChart + detail rows per worker
+   299→   299→7. **Worker Grid** — Interactive cards with gradient backgrounds (busy=emerald, error=red, idle=muted), sparklines, trust bars, quick +/- trust buttons
+   300→   300→8. **Worker Detail Dialog** — Full details, task history table, sparkline, Terminate/Restart/Reassign buttons (all API-wired), trust adjustment panel
+   301→   301→9. **Task Queue** — Queued tasks with Assign button (WebSocket first, REST fallback)
+   302→   302→10. **Recent Completed** — Task completion list
+   303→   303→11. **Spawn Worker Dialog** — Name, Type, Domain inputs → POST API
+   304→   304→12. **Reassign Task Dialog** — New domain and task ID → POST API
+   305→   305→13. **Throughput Chart** — NexusBarChart with refresh button
+   306→   306→
+   307→   307→**Data Source:** `/api/swarm` with 15s auto-refresh + WebSocket overlay on port 3003. All mutations API-wired with rate-limit awareness.
+   308→   308→
+   309→   309→### 3.8 Tokens Tab (`tokens-tab.tsx`)
+   310→   310→
+   311→   311→**Purpose:** Token budget monitoring — track usage, forecast burn rate, optimize costs.
+   312→   312→
+   313→   313→**Sections:**
+   314→   314→1. **Session Token Budget** — Progress bar with burn rate (tok/min), time remaining, real data from API
+   315→   315→2. **Token Flow Sankey** — Models → Agents → Tasks flow visualization (3-column grid with opacity-based connections)
+   316→   316→3. **Per-Agent Token Usage** — Bar chart from real usage logs
+   317→   317→4. **Hourly Consumption** — Area chart aggregated from usage logs by hour
+   318→   318→5. **Token Usage Heatmap** — 5×8 grid (agents × hours) with tooltip, color intensity by volume
+   319→   319→6. **Per-Model Consumption** — Table with trend sparklines per model
+   320→   320→7. **Budget Alerts** — Warning/info alerts with View Details and Dismiss buttons
+   321→   321→8. **Cost Optimization** — 4 suggestions with savings badges, Apply buttons
+   322→   322→9. **Budget Forecast** — Burn rate, time to exhaust, projected remaining, optimization button
+   323→   323→10. **Session Comparison** — This vs Last session metrics with trend indicators
+   324→   324→
+   325→   325→**Data Source:** `/api/tokens` with 30s auto-refresh. All charts computed from real usage logs.
+   326→   326→
+   327→   327→### 3.9 Rate Limits Tab (`rate-limit-tab.tsx`)
+   328→   328→
+   329→   329→**Purpose:** API rate limiting monitoring — track usage against provider limits, manage keys.
+   330→   330→
+   331→   331→**Sections:**
+   332→   332→1. **Rate Limit Status** — Current usage vs limits for each API provider
+   333→   333→2. **Request Queue** — Pending requests with status
+   334→   334→3. **Key Rotation** — API key management and rotation status
+   335→   335→
+   336→   336→**Data Source:** `/api/rate-limit/status` with real-time tracking via `rate-limiter.ts` and `api-key-manager.ts`.
+   337→   337→
+   338→   338→### 3.10 Global Components (Non-Tab)
+   339→   339→
+   340→   340→| Component | Trigger | Description |
+   341→   341→|-----------|---------|-------------|
+   342→   342→| AI Assistant | Floating button (bottom-right) | Chat with NEXUS AI — tries Claude proxy first, falls back to z-ai SDK |
+   343→   343→| Command Palette | Ctrl+K / Cmd+K | 8 navigation + 6 action commands, real-time search |
+   344→   344→| System Logs | Ctrl+L / Terminal icon | Real-time log streaming from 8 pillars, level/source filtering, export |
+   345→   345→| Notification Center | Bell icon | 10 pre-populated + auto-generated alerts, mark read, dismiss |
+   346→   346→| Global Export | Ctrl+E | JSON/CSV export across all tabs, full dashboard report |
+   347→   347→| Quick Stats Widget | Floating (bottom-left, desktop) | Token budget, active agents, uptime at a glance |
+   348→   348→| Keyboard Shortcuts | ? key | Full shortcut reference panel |
+   349→   349→
+   350→   350→---
+   351→   351→
+   352→   352→## 4. Successful Simulations & Trials
+   353→   353→
+   354→   354→### 4.1 Real-Time WebSocket Swarm Updates ✅
+   355→   355→
+   356→   356→**What:** Built Socket.io mini-service on port 3003 that emits 5 real-time event channels every 3-8 seconds.
+   357→   357→
+   358→   358→**Channels:**
+   359→   359→- `swarm:worker-update` — Random worker status changes (6 workers cycling busy/idle/error)
+   360→   360→- `swarm:task-complete` — Task completion events with duration and token counts
+   361→   361→- `swarm:task-queued` — New tasks appearing in queue from 6 domains
+   362→   362→- `swarm:metrics` — Aggregate throughput, success rate, utilization metrics
+   363→   363→- `nexus:activity` — General activity feed items from 8 NEXUS pillars
+   364→   364→
+   365→   365→**Result:** Swarm tab shows LIVE indicator, merges WebSocket data with REST API data. Task assignment sends via WebSocket first with REST fallback.
+   366→   366→
+   367→   367→### 4.2 AI Provider Bridge — Honest Model Routing ✅
+   368→   368→
+   369→   369→**What:** Built transparent routing engine that maps requests to 8 models across 4 tiers with honest labeling.
+   370→   370→
+   371→   371→**Successful Tests:**
+   372→   372→- `GET /api/ai-bridge` → 200 with 8 routes, 2 providers, summary stats
+   373→   373→- `POST /api/ai-bridge` with "ping" → 200, handled locally (optimized: true)
+   374→   374→- `POST /api/ai-bridge` with "What is 2+2?" → 200, routed through GLM-4.7, 273-659ms latency
+   375→   375→- `POST /api/ai-bridge/providers` (z-ai health check) → 200, isAvailable: true, ~940ms
+   376→   376→
+   377→   377→**Honest Labeling:** No fake "Claude" names — each tier shows the real model (GLM-4.7, DeepSeek R1, Trinity Large, Qwen3 Coder, Step 3.5 Flash, Gemma 4, Kimi K2, Nemotron).
+   378→   378→
+   379→   379→### 4.3 TrustEngine v2.2 Integration ✅
+   380→   380→
+   381→   381→**What:** Integrated HARDWALL defense stack with 6-stage CDR state machine into Governor tab.
+   382→   382→
+   383→   383→**Features Verified:**
+   384→   384→- Logistic scaling with adaptive temporal decay
+   385→   385→- Non-compensatory CRITICAL hard block
+   386→   386→- CDR stage visualization (6 stages: Nominal → Caution → Restricted → High Risk → Critical → Collapsed)
+   387→   387→- Trust velocity tracking per agent
+   388→   388→- Recovery path indicator
+   389→   389→- `/api/trust-engine` returns full trust matrix + CDR distribution + health summary
+   390→   390→
+   391→   391→### 4.4 API Data Integration — All 8 Tabs ✅
+   392→   392→
+   393→   393→**What:** Successfully replaced all hardcoded static data with live API calls across every tab.
+   394→   394→
+   395→   395→**Verified Data Flows:**
+   396→   396→- GMR: Model toggle → POST `/api/models` → optimistic update → refetch
+   397→   397→- StressLab: Run Test → POST `/api/stresslab` → progress simulation → success toast
+   398→   398→- Governor: Appeal → POST `/api/governor` → refetch decisions
+   399→   399→- Vault: Verify Chain → POST `/api/vault` → results display
+   400→   400→- Research: Mark In Progress → PUT `/api/research` → refetch papers
+   401→   401→- Tokens: All charts computed from real `TokenUsageLog` entries
+   402→   402→- Swarm: Terminate/Restart/Reassign/Spawn/Trust Update → POST `/api/swarm`
+   403→   403→- Quick Stats: Budget and agent data from `/api/tokens`
+   404→   404→
+   405→   405→### 4.5 Rate Limiting Infrastructure ✅
+   406→   406→
+   407→   407→**What:** Built token bucket + queue + dedup + caching + key rotation system.
+   408→   408→
+   409→   409→**Components:**
+   410→   410→- `rate-limiter.ts` — Token bucket algorithm with configurable RPM/RPD limits
+   411→   411→- `api-cache.ts` — Response caching with TTL, maxSize, eviction stats
+   412→   412→- `api-key-manager.ts` — API key storage, rotation, health tracking
+   413→   413→- `/api/proxy` — Rate-limit-aware API proxy
+   414→   414→- `/api/rate-limit/status` — Real-time usage monitoring
+   415→   415→
+   416→   416→### 4.6 Diagnostics Panel ✅
+   417→   417→
+   418→   418→**What:** Functional diagnostic modal in Overview tab that calls `/api/system` and processes real data.
+   419→   419→
+   420→   420→**Verified Flow:**
+   421→   421→- Click "Run Diagnostic" → Opens modal
+   422→   422→- Calls API → Gets agents, models, templates, papers, budget
+   423→   423→- Staggered reveal: each pillar appears 200ms after previous
+   424→   424→- Shows healthy/degraded/error counts + avg health
+   425→   425→- "Re-run" button for repeated diagnostics
+   426→   426→
+   427→   427→---
+   428→   428→
+   429→   429→## 5. Major Problems Faced & Resolutions
+   430→   430→
+   431→   431→### 5.1 CRITICAL: Infinite Recursion in use-api-data.ts
+   432→   432→
+   433→   433→**Problem:** `const fetch = useCallback(async () => { const res = await fetch(url) })` — the inner `fetch(url)` called itself recursively instead of the global `fetch`. This broke ALL API data fetching in GMR tab silently (no error thrown, just infinite recursion that eventually timed out).
+   434→   434→
+   435→   435→**Resolution:** Renamed to `fetchData` and used `globalThis.fetch` for the actual network call. Also replaced all `any` types with `Record<string, unknown>`.
+   436→   436→
+   437→   437→**Impact:** GMR model data was completely broken until this fix. This was a silent failure — no error boundary caught it.
+   438→   438→
+   439→   439→### 5.2 CRITICAL: Stale Closure in LiveActivityFeed
+   440→   440→
+   441→   441→**Problem:** `useState(0)` tick counter was included in `useEffect` dependency array, causing the interval to be destroyed and recreated every 3 seconds (on every tick). This caused memory leaks and visual flickering.
+   442→   442→
+   443→   443→**Resolution:** Replaced with `useRef(0)` tickRef, removed `tick` from dependency array.
+   444→   444→
+   445→   445→### 5.3 CRITICAL: Interval Leaks in StressLab Dialogs
+   446→   446→
+   447→   447→**Problem:** `RunTestDialog` and `BatchRunDialog` created `setInterval` timers for progress simulation but never cleaned them up on component unmount. If the user closed the dialog mid-test, the interval kept running forever.
+   448→   448→
+   449→   449→**Resolution:** Added `useRef<ReturnType<typeof setInterval>>()` for interval refs, cleanup on unmount via useEffect return, clear via ref instead of captured closure.
+   450→   450→
+   451→   451→### 5.4 HIGH: SVG Gradient ID Collision in Charts
+   452→   452→
+   453→   453→**Problem:** Multiple `MiniAreaChart` instances with `dataKey="value"` used the same gradient ID `grad-value`. When multiple charts rendered on the same page, they shared gradients, causing color bleeding — one chart's gradient would override another's.
+   454→   454→
+   455→   455→**Resolution:** Added `useId()` from React to generate unique IDs: `grad-${uid}-${dataKey}`. Applied to both `MiniAreaChart` and `NexusStackedAreaChart`.
+   456→   456→
+   457→   457→### 5.5 HIGH: Hydration Mismatch in Clock Components
+   458→   458→
+   459→   459→**Problem:** Server renders `--:--:--` but client renders the actual time on first paint, causing React hydration mismatch warnings and potential UI flickering.
+   460→   460→
+   461→   461→**Resolution:** Created `useMounted` hook using `useSyncExternalStore` (later simplified to `useState('--:--:--')` + `useEffect` pattern) so both server and client render the same placeholder initially.
+   462→   462→
+   463→   463→### 5.6 HIGH: AI Assistant Double-Message Bug
+   464→   464→
+   465→   465→**Problem:** `addChatMessage` was called before the API call, so when `useNexusStore.getState().chatMessages` was read for the API body, it already included the user message. The API then also appended the user message, causing duplication.
+   466→   466→
+   467→   467→**Resolution:** Capture `currentMessages` from store BEFORE adding user message, then use `currentMessages + user message` in API call body.
+   468→   468→
+   469→   469→### 5.7 HIGH: Dynamic Tailwind Class Bugs
+   470→   470→
+   471→   471→**Problem:** Using template literals like `bg-${t.color}-600/15` for Tailwind classes — Tailwind's JIT compiler can't detect dynamic classes, so they were purged in production builds, resulting in unstyled elements.
+   472→   472→
+   473→   473→**Resolution:** Replaced ALL dynamic class strings with explicit conditional classes using ternary operators. Found in both `vault-tab.tsx` and `governor-tab.tsx` (and later `rate-limit-tab.tsx`).
+   474→   474→
+   475→   475→### 5.8 MEDIUM: Tooltip Import Collisions
+   476→   476→
+   477→   477→**Problem:** Both `recharts` and `@/components/ui/tooltip` export a `Tooltip` component. When both were imported in the same file, the second import silently overrode the first, breaking either chart tooltips or UI tooltips.
+   478→   478→
+   479→   479→**Resolution:** Consistently alias recharts Tooltip to `RechartsTooltip` (or `RechartsTooltipComponent`) across all affected files (tokens-tab.tsx, stresslab-tab.tsx, gmr-tab.tsx, governor-tab.tsx, vault-tab.tsx).
+   480→   480→
+   481→   481→### 5.9 MEDIUM: PieChart Naming Collision
+   482→   482→
+   483→   483→**Problem:** Both `lucide-react` and `recharts` export `PieChart`. In `tokens-tab.tsx`, the lucide icon import silently overrode the recharts component.
+   484→   484→
+   485→   485→**Resolution:** Renamed lucide import to `PieChartIcon` (or `PieChartLucide` in vault-tab.tsx).
+   486→   486→
+   487→   487→### 5.10 MEDIUM: Light Mode Text Contrast
+   488→   488→
+   489→   489→**Problem:** All colored text used `-400` Tailwind shades (designed for dark backgrounds). In light mode, these were nearly invisible — emerald-400 on white, red-400 on white, etc.
+   490→   490→
+   491→   491→**Resolution:** Bulk-replaced 200+ instances across 18 files: `text-{color}-400` → `text-{color}-600 dark:text-{color}-400`. Added 12 light-theme CSS overrides for tables, glows, badges, scrollbars.
+   492→   492→
+   493→   493→### 5.11 OPERATIONAL: Dev Server Process Persistence
+   494→   494→
+   495→   495→**Problem:** Background processes die when the Bash tool shell exits. The dev server needs to be manually restarted between operations.
+   496→   496→
+   497→   497→**Resolution:** Partial — used `bun run dev` with `tee dev.log` for monitoring. Cron job handles auto-restart during review cycles. Still a known issue for manual operations.
+   498→   498→
+   499→   499→---
+   500→   500→
+   501→   501→## 6. Creation & Testing Procedure
+   502→   502→
+   503→   503→### 6.1 Development Workflow
+   504→   504→
+   505→   505→```
+   506→   506→1. Architecture Planning
+   507→   507→   ├── Read uploaded handoff files (NEXUS-STATE.json, NEXUS-BOOT.md, etc.)
+   508→   508→   ├── Design Prisma schema from handoff data
+   509→   509→   ├── Run `bun run db:push` to create SQLite tables
+   510→   510→   └── Seed database with initial data via /api/seed
+   511→   511→
+   512→   512→2. Frontend-First Development
+   513→   513→   ├── Build Zustand store for global state
+   514→   514→   ├── Build layout components (Sidebar, Header, Footer, TabContent)
+   515→   515→   ├── Build 8 tab panels with mock data first
+   516→   516→   ├── Create API routes (GET endpoints)
+   517→   517→   ├── Run `bun run lint` after each major change
+   518→   518→   └── Verify via agent-browser screenshots
+   519→   519→
+   520→   520→3. Backend Integration
+   521→   521→   ├── Add POST/PUT endpoints for mutations
+   522→   522→   ├── Replace mock data with useApiData hook (auto-refresh)
+   523→   523→   ├── Wire interactive buttons to API calls
+   524→   524→   ├── Add optimistic updates with rollback
+   525→   525→   └── Test each mutation endpoint manually
+   526→   526→
+   527→   527→4. Feature Enhancement
+   528→   528→   ├── Add charts (Recharts: Area, Bar, Pie, Scatter, Gauge)
+   529→   529→   ├── Add dialogs (Detail, Action, Configuration)
+   530→   530→   ├── Add search/filter functionality
+   531→   531→   ├── Add CSS animations (stagger, fade, glow, pulse)
+   532→   532→   └── Add global features (Command Palette, System Logs, Export)
+   533→   533→
+   534→   534→5. Quality Assurance
+   535→   535→   ├── Run `bun run lint` (zero errors required)
+   536→   536→   ├── Agent-browser QA at 1920×1080 and 390×844
+   537→   537→   ├── Check all 8 tabs for console errors
+   538→   538→   ├── Test light/dark theme rendering
+   539→   539→   ├── Test mobile responsiveness
+   540→   540→   └── Verify all API endpoints return 200
+   541→   541→
+   542→   542→6. Documentation
+   543→   543→   ├── Update worklog.md after each stage
+   544→   544→   ├── Record all bugs found and fixed
+   545→   545→   ├── Track unresolved issues for next phase
+   546→   546→   └── Create handoff documents for team
+   547→   547→```
+   548→   548→
+   549→   549→### 6.2 Testing Methodology
+   550→   550→
+   551→   551→**Frontend Testing:**
+   552→   552→1. **Lint-first:** `bun run lint` runs before any commit — zero errors required
+   553→   553→2. **Visual QA:** Agent-browser screenshots at desktop (1920×1080) and mobile (390×844)
+   554→   554→3. **Console Monitoring:** All tabs checked for `console.error` and `console.warn`
+   555→   555→4. **Interaction Testing:** Every button, dialog, slider, and toggle verified functional
+   556→   556→5. **Theme Testing:** Both dark and light modes verified for text contrast and layout
+   557→   557→6. **Responsive Testing:** Mobile sheet sidebar, grid layout adaptation, touch targets ≥44px
+   558→   558→
+   559→   559→**Backend Testing:**
+   560→   560→1. **API Route Testing:** Each endpoint called manually via `curl` or browser fetch
+   561→   561→2. **Database Testing:** Prisma queries verified with `prisma:query` logging
+   562→   562→3. **WebSocket Testing:** Socket.io client connection verified through Caddy gateway
+   563→   563→4. **Rate Limiting Testing:** 429 responses verified with rapid-fire requests
+   564→   564→
+   565→   565→**Python Backend Testing:**
+   566→   566→1. **Pytest Suite:** 586 tests across 44 test files (2 collection errors to fix)
+   567→   567→2. **Governor Tests:** Trust scoring, compliance, Kaiju auth, proof chain, base class
+   568→   568→3. **Vault Tests:** Memory tracks, trust, cache, manager, adapter, trust sync
+   569→   569→4. **Bridge Tests:** Server, SDK, MCP auth, token integration
+   570→   570→5. **Engine Tests:** Router, SkillSmith, tool discipline, Hermes GMR
+   571→   571→6. **Swarm Tests:** Auction, spawner budget gate
+   572→   572→7. **Integration Tests:** Compliance, bridge, heartbeat, Hermes, Squeez
+   573→   573→8. **Security Tests:** Encryption hard-fail, poisoning v2
+   574→   574→
+   575→   575→### 6.3 Bug Tracking & Resolution Pattern
+   576→   576→
+   577→   577→**Total bugs fixed across all sessions: ~40+**
+   578→   578→
+   579→   579→| Category | Count | Examples |
+   580→   580→|----------|-------|---------|
+   581→   581→| Critical (crash/data loss) | 4 | Infinite recursion, interval leaks, stale closures |
+   582→   582→| High (broken features) | 8 | SVG gradient collision, hydration mismatch, import collisions, double-message |
+   583→   583→| Medium (visual/usability) | 15 | Dynamic Tailwind, light mode contrast, naming collisions |
+   584→   584→| Low (code quality) | 13+ | Unused imports, unnecessary subscriptions, style-in-JSX |
+   585→   585→
+   586→   586→**Resolution Time:**
+   587→   587→- Critical bugs: Fixed within same session (1-2 hours)
+   588→   588→- High bugs: Fixed within same or next session
+   589→   589→- Medium/Low: Fixed in dedicated bugfix rounds
+   590→   590→
+   591→   591→---
+   592→   592→
+   593→   593→## 7. File Inventory & Architecture
+   594→   594→
+   595→   595→### 7.1 Frontend (src/)
+   596→   596→
+   597→   597→```
+   598→   598→src/
+   599→   599→├── app/
+   600→   600→│   ├── page.tsx                    # Main dashboard page
+   601→   601→│   ├── layout.tsx                  # Root layout with providers
+   602→   602→│   ├── globals.css                 # 25+ CSS utilities, animations, theme overrides
+   603→   603→│   └── api/                        # 19 API route files
+   604→   604→│       ├── route.ts                # Health check
+   605→   605→│       ├── seed/route.ts           # Database seeding
+   606→   606→│       ├── system/route.ts         # System status
+   607→   607→│       ├── agents/route.ts         # Agent CRUD
+   608→   608→│       ├── models/route.ts         # Model CRUD + toggle + health check
+   609→   609→│       ├── stresslab/route.ts      # Test templates + run tests
+   610→   610→│       ├── governor/route.ts       # Decisions + thresholds + patterns
+   611→   611→│       ├── vault/route.ts          # Entries + chain verification
+   612→   612→│       ├── research/route.ts       # Papers + priority updates
+   613→   613→│       ├── tokens/route.ts         # Budget + usage logs
+   614→   614→│       ├── swarm/route.ts          # Workers + reassign + terminate
+   615→   615→│       ├── chat/route.ts           # AI chat (z-ai-web-dev-sdk)
+   616→   616→│       ├── claude/route.ts         # Claude proxy bridge
+   617→   617→│       ├── trust-engine/route.ts   # TrustEngine v2.2 API
+   618→   618→│       ├── ai-bridge/route.ts      # AI Provider Bridge routing
+   619→   619→│       ├── ai-bridge/providers/route.ts  # Provider status
+   620→   620→│       ├── proxy/route.ts          # Rate-limited proxy
+   621→   621→│       ├── rate-limit/status/route.ts    # Rate limit monitoring
+   622→   622→│       └── settings/route.ts       # API key management
+   623→   623→├── components/
+   624→   624→│   ├── nexus/                      # 26 custom components
+   625→   625→│   │   ├── tabs/                   # 8 tab panels + rate-limit
+   626→   626→│   │   ├── header.tsx              # Dashboard header
+   627→   627→│   │   ├── footer.tsx              # Constitution rules + session info
+   628→   628→│   │   ├── sidebar.tsx             # 8-tab navigation (desktop/mobile)
+   629→   629→│   │   ├── tab-content.tsx         # Framer Motion tab transitions
+   630→   630→│   │   ├── charts.tsx              # 5 reusable chart components
+   631→   631→│   │   ├── ai-assistant.tsx        # AI chat panel
+   632→   632→│   │   ├── command-palette.tsx     # Ctrl+K command overlay
+   633→   633→│   │   ├── system-logs.tsx         # Real-time log viewer
+   634→   634→│   │   ├── notification-center.tsx # Alert management
+   635→   635→│   │   ├── export-button.tsx       # JSON/CSV export
+   636→   636→│   │   ├── global-export-dialog.tsx # Ctrl+E global export
+   637→   637→│   │   ├── quick-stats-widget.tsx  # Floating desktop stats
+   638→   638→│   │   ├── system-architecture.tsx # SVG radial diagram
+   639→   639→│   │   ├── session-timeline.tsx    # Horizontal event timeline
+   640→   640→│   │   ├── diagnostics-panel.tsx   # System diagnostic modal
+   641→   641→│   │   └── keyboard-shortcuts.tsx  # Shortcut reference
+   642→   642→│   └── ui/                         # 40+ shadcn/ui components
+   643→   643→├── store/
+   644→   644→│   └── nexus-store.ts              # Zustand global state
+   645→   645→├── hooks/
+   646→   646→│   ├── use-api-data.ts             # Auto-refresh API data hook
+   647→   647→│   ├── use-swarm-ws.ts            # WebSocket client hook
+   648→   648→│   ├── use-mobile.ts              # Mobile detection
+   649→   649→│   ├── use-media.ts               # Media query hook
+   650→   650→│   ├── use-mounted.ts             # SSR-safe mount guard
+   651→   651→│   └── use-toast.ts               # Toast notifications
+   652→   652→└── lib/
+   653→   653→    ├── utils.ts                    # Tailwind merge utility
+   654→   654→    ├── db.ts                       # Prisma client singleton
+   655→   655→    ├── rate-limiter.ts             # Token bucket rate limiter
+   656→   656→    ├── api-cache.ts                # Response cache with eviction
+   657→   657→    ├── api-key-manager.ts          # API key rotation
+   658→   658→    └── ai-provider-bridge.ts       # Transparent model routing engine
+   659→   659→```
+   660→   660→
+   661→   661→### 7.2 Python Backend (nexus_os/)
+   662→   662→
+   663→   663→67 modules across 9 packages — see Section 2.3 for full tree.
+   664→   664→
+   665→   665→### 7.3 Database Schema (Prisma/SQLite)
+   666→   666→
+   667→   667→12 models: Agent, VaultEntry, GovernorDecision, ModelEntry, TestTemplate, TestRun, Paper, TokenUsageLog, SessionBudget, SystemConfig, RateLimitLog, ApiKey
+   668→   668→
+   669→   669→### 7.4 Mini Services
+   670→   670→
+   671→   671→```
+   672→   672→mini-services/
+   673→   673→├── swarm-ws/                # Socket.io WebSocket (port 3003)
+   674→   674→│   ├── index.ts             # 5 event channels, 3-8s intervals
+   675→   675→│   ├── package.json         # bun --hot auto-restart
+   676→   676→│   └── start.sh
+   677→   677→└── claude-proxy/            # Free-claude-code proxy (port 8082) [DEPRECATED]
+   678→   678→```
+   679→   679→
+   680→   680→---
+   681→   681→
+   682→   682→## 8. Current Status & Phase 0 Readiness
+   683→   683→
+   684→   684→### 8.1 Dashboard: OPERATIONAL ✅
+   685→   685→
+   686→   686→All 8+1 tabs functional with real API data. Zero lint errors. Zero console errors. Server stable at HTTP 200.
+   687→   687→
+   688→   688→### 8.2 Python Backend: MOSTLY OPERATIONAL ⚠️
+   689→   689→
+   690→   690→- 586 tests collected (2 collection errors in trust_scoring and token_guard)
+   691→   691→- 67 modules implemented across 9 packages
+   692→   692→- TrustEngine v2.2 with HARDWALL + CDR integrated
+   693→   693→- Known issues: OPUSman v6.0 running (v6.2 designed but not deployed), port inconsistencies
+   694→   694→
+   695→   695→### 8.3 Phase 0 Blockers (from OSMAN Audit)
+   696→   696→
+   697→   697→| Blocker | Status | Owner |
+   698→   698→|---------|--------|-------|
+   699→   699→| 1919 DoppelGround gitleaks | ❌ Not fixed | CODEX |
+   700→   700→| No Langfuse/Supabase/n8n deployment | ❌ Not deployed | Team |
+   701→   701→| mock_api_server.py needs FastAPI replacement | ❌ Not replaced | CODEX |
+   702→   702→| Mini Model Arena not executing | ❌ Not running | NEO |
+   703→   703→| OPUSman v6.0→v6.2 drift | ❌ TASK-005 | NEO |
+   704→   704→| Port map inconsistency (7352 vs 7353) | ❌ TASK-007 | CODEX |
+   705→   705→| COLDSTART_BOOT.txt errors (635→622 tests) | ❌ Not fixed | CODEX |
+   706→   706→| Tasks 001-003 not moved to done/ | ❌ False completion | GROK420 flagged |
+   707→   707→
+   708→   708→### 8.4 Strategic Test Preparation
+   709→   709→
+   710→   710→Per CODEX's dataset recommendations (3GB cap):
+   711→   711→
+   712→   712→**Benchmarks:**
+   713→   713→- `opus46_final.jsonl` — NEXUS-specific evaluation
+   714→   714→- GSM8K — Mathematical reasoning
+   715→   715→- HumanEvalPack — Code generation
+   716→   716→- BeaverTails — Safety alignment
+   717→   717→
+   718→   718→**SFT Training:**
+   719→   719→- UltraChat 200k — Conversational fine-tuning
+   720→   720→- OASST1 — Instruction following
+   721→   721→- OpenThoughts-Agent-v1-SFT — Agent behavior
+   722→   722→- SlimOrca — Efficient training subset
+   723→   723→
+   724→   724→**⚠️ CODEX Warning:** Do NOT benchmark from dirty worktree. Sync to clean canonical-617 (ed41157) first.
+   725→   725→
+   726→   726→### 8.5 Recommended Execution Order
+   727→   727→
+   728→   728→```
+   729→   729→1. Sync local worktree to clean canonical-617 (ed41157)
+   730→   730→2. Fix COLDSTART_BOOT.txt inconsistencies
+   731→   731→3. Standardize port usage to 7352
+   732→   732→4. Run 586-test suite (fix 2 collection errors)
+   733→   733→5. Prepare benchmark datasets (user preparing)
+   734→   734→6. Run benchmark suite on clean branch
+   735→   735→7. Integrate OPUSman v6.2 against Vault/5-track (NOT Mem0)
+   736→   736→8. Deploy FastAPI governance server
+   737→   737→9. Wire dashboard to real Python governance API
+   738→   738→10. Phase 0 closure verification
+   739→   739→```
+   740→   740→
+   741→   741→---
+   742→   742→
+   743→   743→## 9. Appendix: Key Files Reference
+   744→   744→
+   745→   745→### Dashboard Core
+   746→   746→| File | Lines | Description |
+   747→   747→|------|-------|-------------|
+   748→   748→| `src/app/page.tsx` | 62 | Main dashboard page composition |
+   749→   749→| `src/store/nexus-store.ts` | ~150 | Zustand global state (tabs, chat, notifications) |
+   750→   750→| `src/components/nexus/tabs/overview-tab.tsx` | ~1200 | Landing page with 14 sections |
+   751→   751→| `src/components/nexus/tabs/gmr-tab.tsx` | ~1400 | Model router with 11 sections |
+   752→   752→| `src/components/nexus/tabs/governor-tab.tsx` | ~1300 | Trust governance with 16 sections |
+   753→   753→| `src/components/nexus/tabs/vault-tab.tsx` | ~900 | 5-track memory with 10 sections |
+   754→   754→| `src/components/nexus/tabs/stresslab-tab.tsx` | ~1000 | Stress testing with 9 sections |
+   755→   755→| `src/components/nexus/tabs/research-tab.tsx` | ~800 | Paper queue with 10 sections |
+   756→   756→| `src/components/nexus/tabs/swarm-tab.tsx` | ~1100 | Worker orchestration with 13 sections |
+   757→   757→| `src/components/nexus/tabs/tokens-tab.tsx` | ~900 | Token monitoring with 10 sections |
+   758→   758→| `src/components/nexus/charts.tsx` | ~300 | 5 reusable chart components |
+   759→   759→
+   760→   760→### Backend Core
+   761→   761→| File | Description |
+   762→   762→|------|-------------|
+   763→   763→| `src/lib/ai-provider-bridge.ts` | Transparent model routing engine (8 routes, 4 tiers) |
+   764→   764→| `src/lib/rate-limiter.ts` | Token bucket rate limiter |
+   765→   765→| `src/lib/api-cache.ts` | Response cache with TTL + eviction |
+   766→   766→| `src/lib/api-key-manager.ts` | API key rotation and health tracking |
+   767→   767→| `nexus_os/governor/trust_engine_v2.py` | TrustEngine v2.2 HARDWALL + CDR |
+   768→   768→| `nexus_os/vault/manager.py` | 5-track Vault manager (canonical) |
+   769→   769→| `nexus_os/gmr/scheduler.py` | Model rotation scheduler |
+   770→   770→| `nexus_os/swarm/foreman.py` | Swarm foreman/manager |
+   771→   771→| `nexus_os/bridge/server.py` | JSON-RPC governance server |
+   772→   772→
+   773→   773→### Configuration
+   774→   774→| File | Description |
+   775→   775→|------|-------------|
+   776→   776→| `prisma/schema.prisma` | 12 database models |
+   777→   777→| `SOUL.md` | Cloud Orchestrator identity |
+   778→   778→| `HEARTBEAT.md` | Moveable heartbeat protocol |
+   779→   779→| `01_PROJECT_STATE.md` | Canonical project state |
+   780→   780→| `nexus_os/CANONICAL_STRUCTURE.txt` | Branch structure + git workflow |
+   781→   781→| `nexus-scan.py` | DRY-RUN provenance scanner |
+   782→   782→
+   783→   783→---
+   784→   784→
+   785→   785→*End of Report — Prepared by GLM (Dashboard Build Agent) for speci*
+   786→   786→*NEXUS OS v3.0 — "Stabilize → Strengthen → Scale"*
+   787→   787→

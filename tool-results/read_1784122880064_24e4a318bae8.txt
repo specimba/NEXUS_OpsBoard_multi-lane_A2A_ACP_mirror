@@ -1,0 +1,245 @@
+  1870→│                                                                                           │
+  1871→│ The GLM52 lane is a z.ai-sandboxed GLM-5.2 agent with a Next.js workspace, deployed at a  │
+  1872→│ space-z.ai preview URL. It built the "NEXUS A2A mirror" ops dashboard (raw export:        │
+  1873→│ ARCHIVIST\A2AmirrorLANEzaiGLM52v1.tar, landed 2026-07-14 15:18, 296 files + full git history,                                                                                  │
+  1874→│ remote github.com/specimba/NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror). A months-older, far richer                                                                                    │
+  1875→│ "NEXUS OS" dashboard attempt (GLM-5.1) sits fully extracted at ARCHIVIST\nexusDASHv1      │
+  1876→│ (25 Prisma models, 78-module python nexus_os/, ~139 API routes, 40 tabs).                 │
+  1877→│                                                                                           │
+  1878→│ The operator asked for a deep-dive capability-improvement plan for this lane: combine the new                                                                                       │
+  1879→│ mirror and the old pack's best parts into the sophisticated ops board NEXUS actually needs. The                                                                                │
+  1880→│ sandbox agent's own last message ends with three questions (convergence direction / python backend                                                                            │
+  1881→│ wiring / priority) — verbatim the three blank lines of operator gate OG-2 that keep the lane's                                                                                    │
+  1882→│ only mission card NXM-038 dashboard-fusion-mvp parked. So this plan is simultaneously:    │
+  1883→│ (a) the OG-2 resolution, (b) the NXM-038 REV 2 recut, (c) the lane-establishment doctrine, and                                                                             │
+  1884→│ (d) the dispatch material the operator pastes into the z.ai conversation.                 │
+  1885→│ Approving this plan = making the three OG-2 decisions (they are spelled out in §D1 below and                                                                                       │
+  1886→│ will be transcribed into the master doc as the operator ruling).                          │
+  1887→│                                                                                           │
+  1888→│ The "preview is broken" CSS error in the pasted conversation is already fixed by the sandbox agent                                                                             │
+  1889→│ itself (globals.css line 1 carries the source(none) fix in the tar) — no action needed.   │
+  1890→│                                                                                           │
+  1891→│ Roles (binding, CHARTER): FABLE5 (this session) plans and authors docs/cards only — never │
+  1892→│ implements code (D-010); writes only to ARCHIVIST\**, the continuity ledger, own memory/plans,                                                                             │
+  1893→│ and job tmp. GLM52 implements everything sandbox/repo-side. SONNET5-CLI implements the host-side                                                                                 │
+  1894→│ script. CODEX's services (7350/7352/7354/7356) are untouched. D-005 (no fabricated data presented                                                                                 │
+  1895→│ as real), D-011 (CDP HARD_STOP), D-014 (NO key rotations — register + structural containment                                                                               │
+  1896→│ only), D-015 (no GitHub payments — free tier, no Actions dependency) all apply.           │
+  1897→│                                                                                           │
+  1898→│ Ground truth (5 recon/design agents, 2026-07-14)                                          │
+  1899→│                                                                                           │
+  1900→│ Mission system: GLM52 owns exactly one card, NXM-038 (P2, BLOCKED on OG-2, packet inert,  │
+  1901→│ dispatch\reports\ still empty). Master doc v2 b59d4246cf55 endorses: port into the OpsBoard                                                                                  │
+  1902→│ repo, STUB fallback for nexus_os, Layer-1 MVP first. Walls: host 7356 is codex-owned (NXM-009);                                                                                │
+  1903→│ OG-5 (antiGRAV cleanup) is a different lane.                                              │
+  1904→│                                                                                           │
+  1905→│ The mirror app (tar): Next 16 / React 19 / Tailwind v4 / shadcn / bun / standalone; honest                                                                                    │
+  1906→│ architecture, fabricated content — as shipped ~100% of visible data is 2025-01-14 seed fixtures.                                                                                 │
+  1907→│ Four real ingestion seams exist (/api/ledger via NEXUS_LEDGER_PATH, /api/mcp/health probing                                                                                   │
+  1908→│ 127.0.0.1:7354 with honest STUB fallback, POST /api/handoffs, Browserless POST needing a  │
+  1909→│ token). Permanently static: 14-lane grid (src/lib/registry.ts), 22-tool table             │
+  1910→│ (src/lib/mcpTools.ts), inline-mock MCP queue. Prisma unused; no auth; no realtime. THE    │
+  1911→│ structural gap: the sandbox can never reach the host's 127.0.0.1, and no state-transfer   │
+  1912→│ mechanism exists. The tar's upload/ folder proves raw multi-MB host logs get manually uploaded                                                                                  │
+  1913→│ into the sandbox today — the same flow that once leaked a Browserless customer-id into a z.ai chat                                                                                 │
+  1914→│ log. Two wiring defects found by live probe: the health route reads payload.registry_hash but                                                                                       │
+  1915→│ the live bridge emits registry_security.registry_schema_hash; the mirror's LedgerRow models                                                                                    │
+  1916→│ ts while real ledger rows key on timestamp.                                               │
+  1917→│                                                                                           │
+  1918→│ The host (live today, verified): MCP bridge 7354 v2.4.0 LIVE with 25 tools (drift vs the  │
+  1919→│ mirror's static 22 = exactly continuity_append, continuity_tail, cdp_window_probe;        │
+  1920→│ registry_schema_hash 102aca727ff0b7ce); Brain 7352 observe-only; relay 7350 with 277 models;                                                                                   │
+  1921→│ CDP :9224 keep-visible watchdog active; canonical ledger NEXUSlogs\NEXUScontinuity_runs.jsonl                                                      │
+  1922→│ (187 rows today); dispatch board + empty reports intake in ARCHIVIST.                     │
+  1923→│                                                                                           │
+  1924→│ The old pack (donor): port-worthy — DataSourceBadge + WIRED_VS_MOCKED provenance discipline,                                                                               │
+  1925→│ cmdk command palette, hash-chain proof concept, token meters (concept only). NOT port-worthy —                                                                             │
+  1926→│ simulated overview/system-logs/notifications, Math.random() WS fallback, 3 parallel trust │
+  1927→│ systems, python wholesale, 7 orphaned tabs. New exposure locations (D-014: register, never                                                                                     │
+  1928→│ rotate): GitHub PAT embedded in nexusDASHv1\.git\config remote URL; HF token at           │
+  1929→│ nexusDASHv1\worklog.md:1006.                                                              │
+  1930→│                                                                                           │
+  1931→│ Design decisions                                                                          │
+  1932→│                                                                                           │
+  1933→│ D1 — OG-2 resolution (the three lines; approval of this plan enacts them)                 │
+  1934→│                                                                                           │
+  1935→│ - OG-2(i) convergence: Port INTO NEXUS_OpsBoard_multi-lane_A2A_ACP_mirror (main) — the    │
+  1936→│ mirror app is the living trunk; dashboard-pack/ and nexusDASHv1 are frozen read-only donors,                                                                                   │
+  1937→│ ported piecewise (DataSourceBadge first), never wholesale. nexusalpha remains scratch, not a                                                                                     │
+  1938→│ convergence target.                                                                       │
+  1939→│ - OG-2(ii) nexus_os wiring: STUB — no nexus_os python is wired in any mode this rev; live │
+  1940→│ truth arrives solely as the operator-published STATE_PACK v1 on the git-bus (swept,       │
+  1941→│ fail-closed); any panel without pack coverage renders an explicit SEED/MOCK badge (D-005).                                                                                  │
+  1942→│ - OG-2(iii) priority: Layer-1 MVP first, redefined as the truth rail: STATE_PACK ingestion                                                                                 │
+  1943→│   - staleness + per-panel DataSourceBadge across Lanes/MCP/Ledger/Board, gated on a pack  │
+  1944→│ round-trip proof. The six fusion tabs (Vault/Swarm/Governor/GMR/StressLab/Research) move to a                                                                                      │
+  1945→│ later rev — porting them now while nexus_os is STUB would be badge-decorated mock theater │
+  1946→│ (deviation from REV 1's letter, flagged and justified; honors "MVP first" + D-005 better).                                                                                  │
+  1947→│                                                                                           │
+  1948→│ D2 — Truth-feed architecture: one-way, operator-triggered, fail-closed git-bus            │
+  1949→│                                                                                           │
+  1950→│ HOST (sources: ledger JSONL, GET 7354/health, master-doc board, ports doctor)             │
+  1951→│   → nexus-pack-gen (NXM-043): collect → assemble STATE_PACK.json → REDACTION SWEEP (fail-closed)                                                                             │
+  1952→│   → commit data/state_pack.json to the mirror's own private GitHub repo (free tier, no Actions)                                                                                  │
+  1953→│   → sandbox: git pull (code + truth together) → /api/state → every panel badged + staleness chip                                                                            │
+  1954→│ - Transport ladder: T1 git-bus (primary; survives sandbox wipes, one command per refresh, │
+  1955→│ git log = audit trail) → T2 structured upload of the same swept pack file → T3 trimmed    │
+  1956→│ chat-paste (≤8 KB, emergency). Raw host-log uploads are DEPRECATED-FORBIDDEN.             │
+  1957→│ - Pack lives at data/state_pack.json in the repo (gitignore-exempt; loader default, env   │
+  1958→│ NEXUS_STATE_PACK_PATH override for host-mode). Host bus clone lives OUTSIDE Documents\NEXUS                                                                           │
+  1959→│ and Downloads\NEXUSlogs (e.g. C:\Users\speci.000\mirror-bus\) to keep canon trees clean.  │
+  1960→│ - STATE_PACK v1 (semver pack_schema; soft 128 KiB / hard 512 KiB): envelope (pack_id,     │
+  1961→│ generated_at UTC, ttl_hours, generator, master_doc_sha, mandatory sweep proof block) +    │
+  1962→│ sections lanes[] (id/status/evidence/class/checked_at), mcp (status, version, tool_count, │
+  1963→│ registry_schema_hash, tools[] w/ schema_hash, queue), ledger_tail (last N rows verbatim), │
+  1964→│ board.cards[] (id/title/executor/priority/status/gate/rev), ports_doctor[]; optional      │
+  1965→│ host_metrics/handoffs null in v1.0. Absent section ⇒ UI renders labeled STUB.             │
+  1966→│ - Redaction sweep (host-side, inside generator, on serialized pack bytes + git diff --cached):                                                                                │
+  1967→│ Tier A credential-prefix regexes (gh*/github_pat/sk-/hf_/fish_/ak_/Bearer/JWT/ngrok tokens+URLs/                                                                              │
+  1968→│ AKIA/xox/PEM/browserless+customer-id), Tier B contextual assignment heuristic with JSONPath                                                                                  │
+  1969→│ allowlist (handoffs[].token ~ ^nx_), Tier C exact-literal denylist of every NXM-001       │
+  1970→│ register value (host-only file, never committed). Any hit = exit 2, pack does not ship;   │
+  1971→│ only a redacted hit report (class, path, sha256[:8]) is written. Canary test (planted fake                                                                                      │
+  1972→│ ghp_… must block) is a hard gate of NXM-043.                                              │
+  1973→│                                                                                           │
+  1974→│ D3 — NXM-038 REV 2 scope (GLM52, sandbox; zero new npm deps — zod/cmdk/shadcn all present)                                                                                  │
+  1975→│                                                                                           │
+  1976→│ Truth rail + honesty rail, 7 sandbox-verifiable steps (full port map in the design doc):  │
+  1977→│ 1. Badge substrate: adapt donor data-source-badge.tsx → src/components/DataSourceBadge.tsx                                                        │
+  1978→│ with states WIRED | PACK(+age) | SEED | MOCK | OFF and required panelId prop; retrofit all                                                                                       │
+  1979→│ existing panels; new docs/WIRED_VS_MOCKED.json panel manifest; badge-tally grep gate.     │
+  1980→│ 2. Pack seam: new src/lib/statePack.ts (zod v1 schema, mtime-cached loader, staleness math);                                                                                    │
+  1981→│ new POST/GET /api/import (1.5 MB cap, sandbox-side credential-sweep → 422, writes         │
+  1982→│ data/state_pack.json); paths.ts env additions; committed data/test_pack.example.json      │
+  1983→│ sentinel fixture (42 cards, tool_count 25, lane zo broken).                               │
+  1984→│ 3. Lanes pack-driven: registry.ts statuses become SEED baseline + applyPackStatuses();    │
+  1985→│ /api/lanes returns {lanes, source}; nav PackStatusChip ("PACK v1 · 2h" / "NO PACK — SEED  │
+  1986→│ MODE").                                                                                   │
+  1987→│ 4. MCP de-mock: mcpTools.ts prefers pack.mcp.tools (25 live) with static-22 fallback +    │
+  1988→│ visible drift note; queue route de-inlined to data/sample_mcp_queue.json (tsk_seed_*,     │
+  1989→│ "sample":true) or pack queue; fix health route to read                                    │
+  1990→│ registry_security.registry_schema_hash.                                                   │
+  1991→│ 5. Mission Board tab: new /board page + MissionCard/BoardFilters components rendering     │
+  1992→│ pack.board.cards (42 NXM cards; status columns, executor/priority/gate filters, stat tiles);                                                                                   │
+  1993→│ no pack → 6 watermarked NXM-SEED-* cards + import banner. Plain divs, no recharts.        │
+  1994→│ 6. Palette + host-mode gating + watermarks: port command palette (strip zustand/theme-toggle;                                                                     │
+  1995→│ route nav over the 6 pages, Ctrl+K); Browserless page/API render OFF/503 host-only when   │
+  1996→│ BROWSERLESS_TOKEN absent (always absent in sandbox); "sample":true watermark on all       │
+  1997→│ data/sample_* fixtures; ledger reader accepts both timestamp and ts; replace hello-world  │
+  1998→│ api/route.ts with an API index.                                                           │
+  1999→│ 7. Docs + negative control: README/STATE.md Milestone F/docs/STATE_PACK.md/MCP_CONTRACT   │
+  2000→│ updates + contract:sync script (tool table regenerated from pack, never hand-authored);   │
+  2001→│ full no-pack walk of all 6 pages ⇒ zero fake-live surfaces.                               │
+  2002→│ Gates: every step bun run lint && bun run build (build alone insufficient —               │
+  2003→│ ignoreBuildErrors:true); G1 build+lint green; G2 badge tally == manifest == panel count; G3                                                                                        │
+  2004→│ negative control (zero unbadged MOCK/SEED); G4 pack round-trip proof (operator pushes fresh                                                                                     │
+  2005→│ pack → sandbox pulls → UI shows new pack_id/generated_at; screenshot + commit hash in REPORT).                                                                                  │
+  2006→│ Memory constraint: verify via standalone bun start, never long-lived bun run dev (old sandbox                                                                                   │
+  2007→│ died ~60s); never touch globals.css lines 1-2 (source(none) + @source).                   │
+  2008→│                                                                                           │
+  2009→│ D4 — New cards (total board 42 → 44; both SONNET5-CLI)                                    │
+  2010→│                                                                                           │
+  2011→│ - NXM-043 state-pack-generator-and-git-bus (P1): operator-run nexus-pack-gen (PowerShell or                                                                                        │
+  2012→│ Python) — collectors (ledger tail read-only, GET 7354/health, master-doc board parse, ports                                                                                     │
+  2013→│ doctor) → STATE_PACK v1 → sweep tiers A/B/C w/ unit tests incl. canary → commit+push to the                                                                                       │
+  2014→│ mirror repo from the bus clone. Git identity: reuse the host's existing GitHub credential by                                                                                        │
+  2015→│ default; optionally the operator may provision a narrower fine-grained single-repo PAT    │
+  2016→│ (scope-narrowing allowed under D-014 structural containment; agents never create or handle key                                                                                │
+  2017→│ values, D-001). Local copy always written to NEXUSlogs\state_pack\ for T2/T3 fallback.    │
+  2018→│ Gates: sweep tests + canary block; schema-valid pack; live round-trip with NXM-038 G4;    │
+  2019→│ runbook (manual per-session; optional Task Scheduler later — never GH Actions, D-015).    │
+  2020→│ - NXM-044 mirror-host-mode-deploy (P3, PARKED; AFTER: 038 REV 2 + 043): clone/config/validate                                                                     │
+  2021→│ the same app on the host, MIRROR_MODE=host, non-CODEX port (e.g. 3010), direct            │
+  2022→│ NEXUS_LEDGER_PATH + live 7354 probe + host-only BROWSERLESS_TOKEN enabling the Browserless                                                                               │
+  2023→│ tab. No new sandbox code — REV 2 ships the env-driven paths. Gate: ports doctor shows no CODEX                                                                                     │
+  2024→│ collision; Browserless provably absent from sandbox builds.                               │
+  2025→│                                                                                           │
+  2026→│ D5 — Lane security doctrine (RED-LINES on the cards + proposed CHARTER D-016)             │
+  2027→│                                                                                           │
+  2028→│ RL-1 no NEXUS secret ever enters the z.ai sandbox by any channel (env/repo/pack/chat) except the                                                                                │
+  2029→│ lane's own operator-issued repo push credential; RL-2 BROWSERLESS_TOKEN + Browserless feature =                                                                                 │
+  2030→│ host-mode-only; RL-3 raw host-log uploads FORBIDDEN — swept STATE_PACKs are the only host→sandbox                                                                              │
+  2031→│ channel; RL-4 sweep gate fail-closed, no in-lane override; RL-5 register (never rotate) the two                                                                                   │
+  2032→│ nexusDASHv1 exposures as NXM-001 rows 9-10, exclude nexusDASHv1\** from every pack/upload path,                                                                                     │
+  2033→│ add literals to Tier-C denylist; RL-6 any credential sighting = [REDACTED]+location report to the                                                                             │
+  2034→│ register, never a rotation (D-014), never paid remediation (D-015).                       │
+  2035→│ D-016 (proposed, enacted by plan approval): "No NEXUS secret may enter a third-party sandbox                                                                                   │
+  2036→│ surface. Host→sandbox truth transfer only via generator-produced, redaction-swept STATE_PACKs;                                                                              │
+  2037→│ raw host-log uploads into sandboxes are forbidden." (Generalizes the z.ai leak lesson to CHARTER.)                                                                                 │
+  2038→│                                                                                           │
+  2039→│ D6 — MCP/SAGE future hooks (interfaces only)                                              │
+  2040→│                                                                                           │
+  2041→│ Contract-first: pack carries live tool inventory + registry hash; MCP_CONTRACT.md tool table is                                                                                  │
+  2042→│ regenerated from the pack (contract:sync), prose/denylist stay human-owned; UI drift banner when                                                                               │
+  2043→│ pack ≠ contract. SSE/streaming: reserved env only, live solely inside OG-6-sanctioned tunnel                                                                                    │
+  2044→│ windows; tunnel URLs are a sweep class. SAGE: reserved tab + /api/sage/status stub        │
+  2045→│ {status:"RESERVED", gated_on:"OG-6"} — v2 backlog, not in REV 2.                          │
+  2046→│                                                                                           │
+  2047→│ D7 — Backlog (recorded in design doc, not carded yet)                                     │
+  2048→│                                                                                           │
+  2049→│ v2: ledger-integrity panel (host-computed hash chain over ledger rows in pack — proof_chain                                                                               │
+  2050→│ concept at the right layer), handoff↔ledger cross-linking (frontend join), SAGE stub, /api/import                                                                               │
+  2051→│ shared-secret auth (host-mode prerequisite). v3: token/cost meters, governor threshold display,                                                                                  │
+  2052→│ vault 5-track donut (all pack-section extensions, display-only). DROP: StressLab, rate-limit tab,                                                                           │
+  2053→│ token-guard tab, SSRF proxy route, Prisma models (0 cherry-picked).                       │
+  2054→│                                                                                           │
+  2055→│ Deliverables this session will produce (after approval)                                   │
+  2056→│                                                                                           │
+  2057→│ All writes stay inside FABLE5's surfaces: ARCHIVIST\**, ledger append, own memory/plans, job tmp.                                                                                  │
+  2058→│ No repo commits, no PR (nothing in any git tree changes), no service ops.                 │
+  2059→│                                                                                           │
+  2060→│ 1. Design doc ARCHIVIST\NEXUS_GLM52_A2A_MIRROR_LANE_PLAN_2026-07-14.md — full architecture                                                                              │
+  2061→│ (flow diagram, transport rationale), STATE_PACK v1 schema (commented JSON) + sweep spec, the                                                                                       │
+  2062→│ complete 21-row file-level port map, 7-step build order with RUN:/EXPECT: gates, reconciliation                                                                            │
+  2063→│ table vs the lane's own two in-tar design docs, security doctrine, backlog, and Appendix A:                                                                                        │
+  2064→│ paste-ready reply to the sandbox conversation (answers its 3 questions, points at the packet                                                                                    │
+  2065→│   - git-bus pull).                                                                        │
+  2066→│ 2. Master doc v3 amendment (NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md):      │
+  2067→│ OG-2 marked RESOLVED with the three D1 lines + provenance (operator plan approval, this plan                                                                                      │
+  2068→│ file); NXM-038 recut REV 2 (new OBJECTIVE/STEPS/GATES per D3, RED-LINES per D5); new cards                                                                                     │
+  2069→│ NXM-043/044 (board rows, §0.4 SONNET5-CLI surface additions incl. bus-clone location rule,                                                                                     │
+  2070→│ card bodies); CHARTER D-016 appended; NXM-001 register rows 9-10; Part 2 walkthrough deltas                                                                                    │
+  2071→│ (§5.9 GLM52 sequence, OG list, scorecard count 42→44); DOC-VERSION 3; VERIFIED-AS-OF re-stamp.                                                                                 │
+  2072→│ 3. Packet regeneration: update gen_packets.sh (GLM52 preamble emits the three RESOLVED OG-2                                                                                      │
+  2073→│ lines instead of blanks; SONNET5-CLI packet picks up NXM-043/044) → regenerate all 7 packets +                                                                                 │
+  2074→│ cover sheet, restamped with the new sha256[:12].                                          │
+  2075→│ 4. Adversarial verification pass (Workflow tool, ≤3 auditors: claims-vs-evidence, doc/packet                                                                                │
+  2076→│ consistency, secrets-in-artifacts scan) → fix all findings → re-scan clean.               │
+  2077→│ 5. Closeout: ledger checkpoint row (fable5-20260714-glm52-lane-plan), memory update       │
+  2078→│ (nexus-masterdoc-dispatch-2026-07-14.md + new nexus-glm52-lane-plan-2026-07-14.md,        │
+  2079→│ MEMORY.md index), final summary with the operator run-order (hand GLM52 packet + paste    │
+  2080→│ Appendix A → dispatch SONNET5-CLI on NXM-043 → first pack round-trip → NXM-044 later).    │
+  2081→│                                                                                           │
+  2082→│ Files to create/modify                                                                    │
+  2083→│                                                                                           │
+  2084→│ - CREATE ARCHIVIST\NEXUS_GLM52_A2A_MIRROR_LANE_PLAN_2026-07-14.md                         │
+  2085→│ - MODIFY ARCHIVIST\NEXUS_MASTER_WALKTHROUGH_AND_MISSION_DOC_2026-07-14.md (v2 → v3)       │
+  2086→│ - MODIFY ~\.claude\jobs\6e30788a\tmp\gen_packets.sh; REGENERATE ARCHIVIST\dispatch\* packets                                                                                   │
+  2087→│ - APPEND NEXUSlogs\NEXUScontinuity_runs.jsonl (one row)                                   │
+  2088→│ - UPDATE memory files under ~\.claude\projects\...\memory\                                │
+  2089→│ - (Executor cards will later touch: mirror repo per D3 — GLM52; host nexus-pack-gen + bus clone                                                                                     │
+  2090→│ — SONNET5-CLI. Not this session.)                                                         │
+  2091→│                                                                                           │
+  2092→│ Verification                                                                              │
+  2093→│                                                                                           │
+  2094→│ - Master doc: card count 44, OG-2 shows RESOLVED w/ provenance, D-016 present, register rows 9-10                                                                                 │
+  2095→│ present, no blank OG-2 lines anywhere; grep sweeps: no order to rotate/pay (D-014/D-015), no                                                                                        │
+  2096→│ raw-log-upload instruction survives, every NXM-043/044 AFTER/HANDOFF edge names existing cards.                                                                                    │
+  2097→│ - Packets: all 7 + cover restamped with identical new sha; GLM52 packet contains REV 2 card + the                                                                                │
+  2098→│ three RESOLVED lines; SONNET5-CLI packet contains 043/044; secrets scan of all regenerated                                                                               │
+  2099→│ artifacts = zero credential-shaped strings.                                               │
+  2100→│ - Auditor workflow: 0 open findings after fixes.                                          │
+  2101→│ - Ledger: JSON-parse all lines (n/n valid) after append.                                  │
+  2102→│ - Session hygiene: git status in the worktree unchanged (no repo writes).                 │
+  2103→╰───────────────────────────────────────────────────────────────────────────────────────────╯
+  2104→
+  2105→✻ Sautéed for 4h 32m 15s
+  2106→
+  2107→────────────────────────────────────────────────────────────── nexus-core-solidify audit triage ──
+  2108→❯
+  2109→──────────────────────────────────────────────────────────────────────────────────────────────────
+  2110→                                                                                              /rc
+  2111→  ⏸ plan mode on (shift+tab to cycle) · ← for agents
+  2112→  
+
+[showing lines 1870-2112 of 2114; use offset=2113 with limit to continue reading]
