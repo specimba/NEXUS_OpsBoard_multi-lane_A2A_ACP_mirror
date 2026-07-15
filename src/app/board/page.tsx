@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useNexusFetch } from "@/hooks/use-nexus";
 import { DataSourceBadge } from "@/components/DataSourceBadge";
+import { BoardFilters, DEFAULT_FILTERS, type FilterState } from "@/components/BoardFilters";
 import { cn } from "@/lib/utils";
 import {
   ClipboardList,
@@ -137,7 +139,37 @@ function MissionCard({ card }: { card: BoardCard }) {
 
 export default function BoardPage() {
   const state = useNexusFetch<StateResponse>("/api/state", 30000);
-  const cards = state.data?.pack?.board?.cards ?? [];
+  const rawCards = state.data?.pack?.board?.cards ?? [];
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+
+  // Compute filter counts from raw cards
+  const counts = useMemo(() => {
+    const executors: Record<string, number> = {};
+    const priorities: Record<string, number> = {};
+    const gates: Record<string, number> = {};
+    for (const c of rawCards) {
+      if (c.executor) executors[c.executor] = (executors[c.executor] ?? 0) + 1;
+      if (c.priority) priorities[c.priority] = (priorities[c.priority] ?? 0) + 1;
+      if (c.gate) gates[c.gate] = (gates[c.gate] ?? 0) + 1;
+    }
+    return { executors, priorities, gates };
+  }, [rawCards]);
+
+  // Apply filters
+  const cards = useMemo(() => {
+    return rawCards.filter((c) => {
+      if (filters.executor !== "all" && c.executor !== filters.executor) return false;
+      if (filters.priority !== "all" && c.priority !== filters.priority) return false;
+      if (filters.gate !== "all" && c.gate !== filters.gate) return false;
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        const id = c.id.toLowerCase();
+        const title = (c.title ?? "").toLowerCase();
+        if (!id.includes(q) && !title.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rawCards, filters]);
 
   const byStatus = (s: string) => cards.filter((c) => c.status === s);
   const done = byStatus("DONE").length;
@@ -202,8 +234,13 @@ export default function BoardPage() {
         ))}
       </div>
 
+      {/* Filters */}
+      {rawCards.length > 0 && (
+        <BoardFilters filters={filters} onChange={setFilters} counts={counts} />
+      )}
+
       {/* Cards grid — no pack → 6 watermarked NXM-SEED-* fallback cards (D3 step 5) */}
-      {cards.length === 0 ? (
+      {rawCards.length === 0 ? (
         <div className="space-y-3">
           <div className="nexus-panel rounded-lg border-amber-500/30 bg-amber-500/[0.06] p-3">
             <p className="mono text-xs text-amber-200/80">
@@ -218,6 +255,10 @@ export default function BoardPage() {
               <MissionCard key={card.id} card={card} />
             ))}
           </div>
+        </div>
+      ) : cards.length === 0 ? (
+        <div className="nexus-panel rounded-lg p-6 text-center text-xs text-muted-foreground">
+          No cards match the current filters.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
