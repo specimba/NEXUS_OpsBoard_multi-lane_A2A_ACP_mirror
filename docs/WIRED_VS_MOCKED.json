@@ -93,15 +93,29 @@
       "label": "SAGE Status",
       "state": "off",
       "note": "RESERVED — gated on OG-6. Per FABLE5 D6: v2 backlog, not in REV 2. /api/sage returns {status:'RESERVED', gated_on:'OG-6'}. UI renders a lock panel + planned interface contract."
+    },
+    {
+      "panelId": "ledger-integrity-chain",
+      "page": "/",
+      "label": "Ledger Integrity Chain",
+      "state": "wired",
+      "note": "D7 v2: SHA-256 hash chain over ledger rows. GET /api/ledger/integrity computes chain head + per-entry hashes. proof_chain concept at the ledger layer."
+    },
+    {
+      "panelId": "handoff-ledger-crosslink",
+      "page": "/handoffs",
+      "label": "Handoff ↔ Ledger Cross-Link",
+      "state": "wired",
+      "note": "D7 v2: frontend join between HandoffCard tokens and LedgerRow references. Shows which handoffs have ledger evidence (green dot) and which don't (gray dot)."
     }
   ],
   "_tally": {
-    "wired": 5,
+    "wired": 7,
     "pack": 1,
     "seed": 3,
     "mock": 1,
     "off": 2,
-    "total": 12
+    "total": 14
   },
   "_gates": {
     "G2": "badge-tally grep gate: grep -rc 'DataSourceBadge' src/app/ must equal panels.length in this manifest; every panel page must reference DataSourceBadge at least once with a panelId matching this file.",

@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useNexusFetch } from "@/hooks/use-nexus";
 import { HandoffCard } from "@/components/HandoffCard";
 import { DataSourceBadge } from "@/components/DataSourceBadge";
+import { HandoffLedgerLink } from "@/components/HandoffLedgerLink";
 import { LANES } from "@/lib/registry";
-import type { HandoffCard as HandoffCardType, HandoffStatus, LaneId } from "@/lib/types";
+import type { HandoffCard as HandoffCardType, HandoffStatus, LaneId, LedgerRow } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftRight, Plus, Loader2, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,8 +46,13 @@ function genToken() {
   return `nx_${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
 
+interface LedgerResponse {
+  rows: LedgerRow[];
+}
+
 export default function HandoffsPage() {
   const handoffs = useNexusFetch<HandoffsResponse>("/api/handoffs", 6000);
+  const ledger = useNexusFetch<LedgerResponse>("/api/ledger?limit=50", 10000);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [laneFilter, setLaneFilter] = useState<string>("all");
 
@@ -346,6 +352,14 @@ export default function HandoffsPage() {
               </div>
             )}
           </div>
+
+          {/* D7 v2: handoff↔ledger cross-linking */}
+          {filtered.length > 0 && (
+            <HandoffLedgerLink
+              handoffs={filtered}
+              ledgerRows={ledger.data?.rows ?? null}
+            />
+          )}
         </div>
       </div>
     </div>
