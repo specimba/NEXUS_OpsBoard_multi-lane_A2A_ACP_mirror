@@ -11,6 +11,7 @@ import {
   ArrowLeftRight,
   Globe,
   ClipboardList,
+  Sparkles,
   Activity,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ const LINKS = [
   { href: "/lanes", label: "Lanes", icon: Network },
   { href: "/handoffs", label: "Handoffs", icon: ArrowLeftRight },
   { href: "/browserless", label: "Browserless", icon: Globe },
+  { href: "/sage", label: "SAGE", icon: Sparkles },
 ] as const;
 
 export function OpsNav() {

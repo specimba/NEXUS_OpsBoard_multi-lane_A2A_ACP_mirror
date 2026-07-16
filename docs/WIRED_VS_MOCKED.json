@@ -86,6 +86,13 @@
       "label": "Mission Board Cards",
       "state": "pack",
       "note": "Renders pack.board.cards (42 NXM cards). PACK when state_pack.json loaded, SEED when using test_pack.example.json sentinel. No pack → import banner + 42 NXM-SEED watermarked cards."
+    },
+    {
+      "panelId": "sage-status",
+      "page": "/sage",
+      "label": "SAGE Status",
+      "state": "off",
+      "note": "RESERVED — gated on OG-6. Per FABLE5 D6: v2 backlog, not in REV 2. /api/sage returns {status:'RESERVED', gated_on:'OG-6'}. UI renders a lock panel + planned interface contract."
     }
   ],
   "_tally": {
@@ -93,8 +100,8 @@
     "pack": 1,
     "seed": 3,
     "mock": 1,
-    "off": 1,
-    "total": 11
+    "off": 2,
+    "total": 12
   },
   "_gates": {
     "G2": "badge-tally grep gate: grep -rc 'DataSourceBadge' src/app/ must equal panels.length in this manifest; every panel page must reference DataSourceBadge at least once with a panelId matching this file.",

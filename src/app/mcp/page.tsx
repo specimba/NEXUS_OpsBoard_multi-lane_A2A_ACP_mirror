@@ -4,6 +4,7 @@ import { useNexusFetch } from "@/hooks/use-nexus";
 import { McpHealthBadge } from "@/components/McpHealthBadge";
 import { McpToolTable } from "@/components/McpToolTable";
 import { DataSourceBadge } from "@/components/DataSourceBadge";
+import { DriftBanner } from "@/components/DriftBanner";
 import type { McpHealth, McpToolInfo, McpQueueSnapshot } from "@/lib/types";
 import { Wrench, ListChecks, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -120,6 +121,8 @@ export default function McpPage() {
           health probe error: {health.error}
         </p>
       )}
+
+      <DriftBanner />
 
       <div className="space-y-2">
         <div className="flex items-center gap-2">

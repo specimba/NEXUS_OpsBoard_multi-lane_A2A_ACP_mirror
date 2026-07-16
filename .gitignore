@@ -61,3 +61,4 @@ server.log
 
 # Local NEXUS env overrides (real ledger path, etc.)
 .env.localtool-results/
+data/state_pack.json
