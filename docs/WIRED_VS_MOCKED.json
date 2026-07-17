@@ -114,15 +114,29 @@
       "label": "Research Coverage",
       "state": "pack",
       "note": "D7 v3: papers section display. Shows total papers (646), gap-area breakdown (G1-G6), coverage %, integration passes (P1-P4), and highest-impact paper-to-component mappings. OFF when no papers section in pack."
+    },
+    {
+      "panelId": "integration-passes",
+      "page": "/",
+      "label": "Integration Passes",
+      "state": "pack",
+      "note": "D7 v3: monitors the 4 integration passes from papers distillation. Each pass shows paper finding, target component, observable signal, and implementation status. PACK when papers section present."
+    },
+    {
+      "panelId": "governance-interface",
+      "page": "/",
+      "label": "Governance Interface",
+      "state": "off",
+      "note": "Monitors Python backend (nexus_os/) governance surface. Shows bridge UP/STUB, pack LIVE/TEST, 5 required governance endpoints (from 01_PROJECT_STATE.md P0 seq item 5), and what changes when governance goes live."
     }
   ],
   "_tally": {
     "wired": 7,
-    "pack": 2,
+    "pack": 3,
     "seed": 3,
     "mock": 1,
-    "off": 2,
-    "total": 15
+    "off": 3,
+    "total": 17
   },
   "_gates": {
     "G2": "badge-tally grep gate: grep -rc 'DataSourceBadge' src/app/ must equal panels.length in this manifest; every panel page must reference DataSourceBadge at least once with a panelId matching this file.",

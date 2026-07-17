@@ -9,6 +9,8 @@ import { QwenWebDevNote } from "@/components/QwenWebDevNote";
 import { DataSourceBadge } from "@/components/DataSourceBadge";
 import { LedgerIntegrityPanel } from "@/components/LedgerIntegrityPanel";
 import { ResearchCoveragePanel } from "@/components/ResearchCoveragePanel";
+import { IntegrationPassesPanel } from "@/components/IntegrationPassesPanel";
+import { GovernanceInterfacePanel } from "@/components/GovernanceInterfacePanel";
 import type { LaneMeta, HandoffCard as HandoffCardType, LedgerRow } from "@/lib/types";
 import { Activity, ArrowLeftRight, Network, Server } from "lucide-react";
 import Link from "next/link";
@@ -171,6 +173,12 @@ export default function OpsBoard() {
 
       {/* Research Coverage (D7 v3: papers section display) */}
       <ResearchCoveragePanel />
+
+      {/* Integration Passes (papers distillation → code monitoring) */}
+      <IntegrationPassesPanel />
+
+      {/* Governance Interface (Python backend STUB status + required endpoints) */}
+      <GovernanceInterfacePanel />
 
       {/* Handoffs + Ledger */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
