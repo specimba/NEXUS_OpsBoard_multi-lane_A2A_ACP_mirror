@@ -1,6 +1,6 @@
 # NEXUS A2A Control Plane — Comprehensive Handoff Document
 
-> **Date:** 2026-07-15
+> **Date:** 2026-07-17 (updated with D7 v2+v3 upgrades)
 > **Purpose:** Complete state transfer for a new session (human or AI) to
 > continue or improve the NEXUS A2A control plane. Contains: architecture,
 > current state, all credentials/secrets, file inventory, gate status, and
@@ -163,15 +163,15 @@ BROWSERLESS_REGION=production-sfo
 
 | Page | Path | Purpose |
 |------|------|---------|
-| Ops Board | `src/app/page.tsx` | Home — lane grid, stats, handoffs, ledger tail |
+| Ops Board | `src/app/page.tsx` | Home — lane grid, stats, handoffs, ledger tail, **ledger integrity chain**, **research coverage** |
 | Mission Board | `src/app/board/page.tsx` | 42 NXM cards from STATE_PACK + BoardFilters |
 | MCP | `src/app/mcp/page.tsx` | Health badge, drift banner, queue, 25-tool table |
 | Lanes | `src/app/lanes/page.tsx` | 14-lane doctrine grid (pack-driven statuses) |
-| Handoffs | `src/app/handoffs/page.tsx` | Handoff bus CRUD + filters |
+| Handoffs | `src/app/handoffs/page.tsx` | Handoff bus CRUD + filters + **handoff↔ledger cross-link** |
 | Browserless | `src/app/browserless/page.tsx` | Cloud headless chrome (OFF in sandbox) |
 | SAGE | `src/app/sage/page.tsx` | Reserved stub (gated on OG-6) |
 
-### API Routes (12)
+### API Routes (13)
 
 | Route | Method | Purpose |
 |-------|--------|---------|
@@ -181,14 +181,15 @@ BROWSERLESS_REGION=production-sfo
 | `/api/import` | GET, POST | Pack import (1.5MB cap, sweep→422, zod validate) |
 | `/api/lanes` | GET | Lane registry (pack-driven) |
 | `/api/ledger` | GET | Continuity ledger tail (JSONL, accepts ts+timestamp) |
+| `/api/ledger/integrity` | GET | **SHA-256 hash chain over ledger rows (D7 v2)** |
 | `/api/handoffs` | GET, POST | Handoff bus (file-backed) |
-| `/api/mcp/health` | GET | MCP bridge probe (STUB fallback) |
-| `/api/mcp/tools` | GET | Tool inventory (pack 25 + static 22 + drift) |
-| `/api/mcp/queue` | GET | Queue snapshot (pack → sample → inline) |
-| `/api/browserless/content` | POST | Cloud headless chrome (SSRF-hardened) |
+| `/api/mcp/health` | GET | MCP bridge probe (STUB fallback, reads registry_security.registry_schema_hash) |
+| `/api/mcp/tools` | GET | Tool inventory (pack 25 + static 22 + drift detection) |
+| `/api/mcp/queue` | GET | Queue snapshot (pack → sample fixture → inline) |
+| `/api/browserless/content` | POST | Cloud headless chrome (SSRF-hardened, OFF in sandbox) |
 | `/api/sage` | GET | SAGE stub `{status:"RESERVED", gated_on:"OG-6"}` |
 
-### Components (13)
+### Components (16)
 
 | Component | File | Purpose |
 |-----------|------|---------|
@@ -201,6 +202,9 @@ BROWSERLESS_REGION=production-sfo
 | LaneCard | `src/components/LaneCard.tsx` | Lane card with doctrine |
 | HandoffCard | `src/components/HandoffCard.tsx` | Handoff token card |
 | LedgerTail | `src/components/LedgerTail.tsx` | Ledger row list |
+| **LedgerIntegrityPanel** | `src/components/LedgerIntegrityPanel.tsx` | **SHA-256 hash chain visualization (D7 v2)** |
+| **HandoffLedgerLink** | `src/components/HandoffLedgerLink.tsx` | **Handoff↔ledger cross-link (D7 v2)** |
+| **ResearchCoveragePanel** | `src/components/ResearchCoveragePanel.tsx` | **Papers database coverage (D7 v3)** |
 | McpHealthBadge | `src/components/McpHealthBadge.tsx` | UP/DOWN/STUB health badge |
 | McpToolTable | `src/components/McpToolTable.tsx` | Tool table with group filters |
 | KeepVisibleBanner | `src/components/KeepVisibleBanner.tsx` | CDP :9224 reminder |
@@ -284,18 +288,27 @@ BROWSERLESS_REGION=production-sfo
 - ✅ SAGE stub: `/api/sage` + `/sage` page (reserved, gated on OG-6)
 - ✅ Drift banner: `DriftBanner` component on MCP page
 
-### D7 Backlog (v2 — not yet started)
+### D7 Backlog (v2)
 
-- [ ] Ledger-integrity panel (host-computed hash chain over ledger rows in pack)
-- [ ] Handoff↔ledger cross-linking (frontend join)
-- [ ] SAGE stub (done — but full SAGE integration is v2)
-- [ ] `/api/import` shared-secret auth (host-mode prerequisite)
+- [x] Ledger-integrity panel — **DONE** (`/api/ledger/integrity` + `LedgerIntegrityPanel`)
+- [x] Handoff↔ledger cross-linking — **DONE** (`HandoffLedgerLink` on `/handoffs`)
+- [x] SAGE stub — **DONE** (`/api/sage` + `/sage` page, reserved on OG-6)
+- [ ] `/api/import` shared-secret auth (host-mode prerequisite — NXM-044)
 
-### D7 Backlog (v3 — not yet started)
+### D7 Backlog (v3)
 
+- [x] Papers section display — **DONE** (`ResearchCoveragePanel`, 646 papers, 95% coverage, gap areas, integration passes)
 - [ ] Token/cost meters (pack-section extension, display-only)
 - [ ] Governor threshold display (pack-section extension)
 - [ ] Vault 5-track donut (pack-section extension)
+
+### Papers Database Investigation
+
+`docs/PAPERS_INVESTIGATION_REPORT.md` — formal report comparing old dashboard
+vs. current state vs. papers library (~646 PDFs). 6 concrete improvements
+identified: AIP Biscuit tokens, DeepContext drift detection, CARROT routing,
+SAGA alignment, steganographic threat surface, papers→dashboard connection.
+The papers→dashboard connection is now live (D7 v3).
 
 ### D7 DROP (explicitly excluded)
 
