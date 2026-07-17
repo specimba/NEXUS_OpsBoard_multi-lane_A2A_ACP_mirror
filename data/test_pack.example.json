@@ -116,5 +116,30 @@
     { "port": 7352, "service": "Brain API", "status": "UP" },
     { "port": 7354, "service": "MCP Bridge v2", "status": "UP", "note": "25 tools, hash 102aca727ff0b7ce" },
     { "port": 9224, "service": "Chrome CDP", "status": "UP", "note": "keep-visible watchdog active" }
-  ]
+  ],
+  "papers": {
+    "total": 646,
+    "by_gap": {
+      "G1_A2A_Protocol": 6,
+      "G2_Token_Economics": 9,
+      "G3_Sandboxing": 10,
+      "G4_Swarm_Coordination": 7,
+      "G5_Steganography": 8,
+      "G6_Hallucination_Monitoring": 6
+    },
+    "coverage_pct": 95,
+    "integration_passes": [
+      { "pass": 1, "name": "IBCT tokens + routing policies", "status": "NOT_STARTED" },
+      { "pass": 2, "name": "Sandbox backends + OpenShell YAML", "status": "NOT_STARTED" },
+      { "pass": 3, "name": "13 worker roles + DAG coordinator", "status": "NOT_STARTED" },
+      { "pass": 4, "name": "DeepContext RNN + UQLM + steg scenarios", "status": "NOT_STARTED" }
+    ],
+    "recent_additions": [
+      { "arxiv_id": "2603.24775", "title": "AIP: Agent Identity Protocol for Verifiable Delegation", "nexus_component": "governor/kaiju_auth.py", "gap": "G1" },
+      { "arxiv_id": "2502.03261", "title": "CARROT: Cost Aware Rate Optimal Router", "nexus_component": "relay/model_relay.py", "gap": "G2" },
+      { "arxiv_id": "2504.21034", "title": "SAGA: Security Architecture for Governing AI", "nexus_component": "claw/policies/", "gap": "G3" },
+      { "arxiv_id": "2602.16935", "title": "DeepContext: Stateful Real-Time Intent Drift Detection", "nexus_component": "monitoring/semantic_drift_monitor.py", "gap": "G6" },
+      { "arxiv_id": "2606.28425", "title": "Tool Use Enables Undetectable Steganography in Multi-Agent LLM Systems", "nexus_component": "security/steg/", "gap": "G5" }
+    ]
+  }
 }

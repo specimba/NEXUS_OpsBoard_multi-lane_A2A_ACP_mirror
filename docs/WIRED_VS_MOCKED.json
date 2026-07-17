@@ -107,15 +107,22 @@
       "label": "Handoff ↔ Ledger Cross-Link",
       "state": "wired",
       "note": "D7 v2: frontend join between HandoffCard tokens and LedgerRow references. Shows which handoffs have ledger evidence (green dot) and which don't (gray dot)."
+    },
+    {
+      "panelId": "research-coverage",
+      "page": "/",
+      "label": "Research Coverage",
+      "state": "pack",
+      "note": "D7 v3: papers section display. Shows total papers (646), gap-area breakdown (G1-G6), coverage %, integration passes (P1-P4), and highest-impact paper-to-component mappings. OFF when no papers section in pack."
     }
   ],
   "_tally": {
     "wired": 7,
-    "pack": 1,
+    "pack": 2,
     "seed": 3,
     "mock": 1,
     "off": 2,
-    "total": 14
+    "total": 15
   },
   "_gates": {
     "G2": "badge-tally grep gate: grep -rc 'DataSourceBadge' src/app/ must equal panels.length in this manifest; every panel page must reference DataSourceBadge at least once with a panelId matching this file.",

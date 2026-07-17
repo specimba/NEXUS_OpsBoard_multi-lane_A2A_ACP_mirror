@@ -114,6 +114,33 @@ export const StatePack = z.object({
   ports_doctor: z.array(PortsDoctorEntry).optional(),
   host_metrics: z.unknown().optional(),
   handoffs: z.unknown().optional(),
+  // D7 v3: papers section (display-only, from papers database)
+  papers: z
+    .object({
+      total: z.number(),
+      by_gap: z.record(z.string(), z.number()).optional(),
+      coverage_pct: z.number().optional(),
+      integration_passes: z
+        .array(
+          z.object({
+            pass: z.number(),
+            name: z.string().optional(),
+            status: z.string().optional(),
+          }),
+        )
+        .optional(),
+      recent_additions: z
+        .array(
+          z.object({
+            arxiv_id: z.string(),
+            title: z.string().optional(),
+            nexus_component: z.string().optional(),
+            gap: z.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
 });
 export type StatePack = z.infer<typeof StatePack>;
 
